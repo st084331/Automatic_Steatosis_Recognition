@@ -67,7 +67,7 @@ if __name__ == '__main__':
                  'mode': statistics.mode(random_points_brightness)})
 
             one_area_brightness = []
-            radius = int(min(t1_data.shape) / 10)
+            diameter = int(min(t1_data.shape) / 10)
             rand_z = random.randint(0, t1_data.shape[0] - 1)
             rand_y = random.randint(0, t1_data.shape[1] - 1)
             rand_x = random.randint(0, t1_data.shape[2] - 1)
@@ -76,24 +76,24 @@ if __name__ == '__main__':
                 rand_y = random.randint(0, t1_data.shape[1] - 1)
                 rand_x = random.randint(0, t1_data.shape[2] - 1)
 
-            min_z = int(rand_z - radius / 2)
+            min_z = int(rand_z - diameter / 2)
             if min_z < 0:
                 min_z = 0
-            max_z = int(rand_z + radius / 2)
+            max_z = int(rand_z + diameter / 2)
             if max_z > t1_data.shape[0]:
                 max_z = t1_data.shape[0]
 
-            min_y = int(rand_y - radius / 2)
+            min_y = int(rand_y - diameter / 2)
             if min_y < 0:
                 min_y = 0
-            max_y = int(rand_y + radius / 2)
+            max_y = int(rand_y + diameter / 2)
             if max_y > t1_data.shape[1]:
                 max_y = t1_data.shape[1]
 
-            min_x = int(rand_x - radius / 2)
+            min_x = int(rand_x - diameter / 2)
             if min_x < 0:
                 min_x = 0
-            max_x = int(rand_x + radius / 2)
+            max_x = int(rand_x + diameter / 2)
             if max_x > t1_data.shape[2]:
                 max_x = t1_data.shape[2]
 
@@ -122,24 +122,24 @@ if __name__ == '__main__':
                     rand_y = random.randint(0, t1_data.shape[1] - 1)
                     rand_x = random.randint(0, t1_data.shape[2] - 1)
 
-                min_z = int(rand_z - radius / 2)
+                min_z = int(rand_z - diameter / 2)
                 if min_z < 0:
                     min_z = 0
-                max_z = int(rand_z + radius / 2)
+                max_z = int(rand_z + diameter / 2)
                 if max_z > t1_data.shape[0]:
                     max_z = t1_data.shape[0]
 
-                min_y = int(rand_y - radius / 2)
+                min_y = int(rand_y - diameter / 2)
                 if min_y < 0:
                     min_y = 0
-                max_y = int(rand_y + radius / 2)
+                max_y = int(rand_y + diameter / 2)
                 if max_y > t1_data.shape[1]:
                     max_y = t1_data.shape[1]
 
-                min_x = int(rand_x - radius / 2)
+                min_x = int(rand_x - diameter / 2)
                 if min_x < 0:
                     min_x = 0
-                max_x = int(rand_x + radius / 2)
+                max_x = int(rand_x + diameter / 2)
                 if max_x > t1_data.shape[2]:
                     max_x = t1_data.shape[2]
 
@@ -168,24 +168,24 @@ if __name__ == '__main__':
                     rand_y = random.randint(0, t1_data.shape[1] - 1)
                     rand_x = random.randint(0, t1_data.shape[2] - 1)
 
-                min_z = int(rand_z - radius / 2)
+                min_z = int(rand_z - diameter / 2)
                 if min_z < 0:
                     min_z = 0
-                max_z = int(rand_z + radius / 2)
+                max_z = int(rand_z + diameter / 2)
                 if max_z > t1_data.shape[0]:
                     max_z = t1_data.shape[0]
 
-                min_y = int(rand_y - radius / 2)
+                min_y = int(rand_y - diameter / 2)
                 if min_y < 0:
                     min_y = 0
-                max_y = int(rand_y + radius / 2)
+                max_y = int(rand_y + diameter / 2)
                 if max_y > t1_data.shape[1]:
                     max_y = t1_data.shape[1]
 
-                min_x = int(rand_x - radius / 2)
+                min_x = int(rand_x - diameter / 2)
                 if min_x < 0:
                     min_x = 0
-                max_x = int(rand_x + radius / 2)
+                max_x = int(rand_x + diameter / 2)
                 if max_x > t1_data.shape[2]:
                     max_x = t1_data.shape[2]
 
