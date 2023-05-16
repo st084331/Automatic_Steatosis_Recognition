@@ -2,7 +2,7 @@ import csv
 from sklearn.model_selection import train_test_split
 
 train = []
-train_csv = './new_train.csv'
+train_csv = './train.csv'
 with open(train_csv) as f:
     reader = csv.DictReader(f)
     for row in reader:

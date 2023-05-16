@@ -7,7 +7,7 @@ import scipy.signal
 from numpy.linalg import inv
 
 train = []
-train_csv = './new_train.csv'
+train_csv = './train.csv'
 with open(train_csv) as f:
     reader = csv.DictReader(f)
     for row in reader:
