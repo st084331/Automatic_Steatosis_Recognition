@@ -1,24 +1,75 @@
 import math
 import os
 import random
+import sys
+
 import nibabel as nib
 from datetime import datetime
 import statistics
+import PyQt5
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QWidget, QPushButton
 import csv
 import dicom2nifti
 import dicom2nifti.settings as settings
 import sklearn
 import sklearn.metrics
+import json
 import torch as torch
-
 import livermask.livermask
 
-vessels = False
-verbose = False
-cpu = True
+VESSELS = False
+VERBOSE = False
+CPU = True
 if torch.cuda.is_available():
-    cpu = False
+    CPU = False
 settings.disable_validate_slice_increment()
+
+class MainWindow(QMainWindow):
+
+    def __init__(self, predictor):
+        self.predictor = predictor
+        super().__init__()
+
+        self.setWindowTitle("My App")
+
+        self.result_label = QLabel()
+
+        self.help_label = QLabel("Enter the full path to the research folder")
+
+        self.input = QLineEdit()
+
+        self.button = QPushButton("Analyse")
+        self.button.clicked.connect(self.handle_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.help_label)
+        layout.addWidget(self.input)
+        layout.addWidget(self.button)
+        layout.addWidget(self.result_label)
+
+        container = QWidget()
+        container.setLayout(layout)
+
+        self.setCentralWidget(container)
+
+    def handle_button(self):
+        folder = str(self.input.text())
+        if os.path.exists(folder):
+            #try:
+            folder_struct = os.path.split(folder)
+            name_of_nifti = folder_struct[len(folder_struct) - 1]
+            handler = CT_Handler(folder, name_of_nifti)
+            value_of_brightness = handler.three_areas_median_of_brightness()
+            print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
+            result = "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness, "median"))
+            os.remove(name_of_nifti + ".nii")
+            os.remove(name_of_nifti + "-livermask2.nii")
+            #except:
+            #    result = "The specified folder cannot be opened"
+        else:
+            result = "Wrong path"
+
+        self.result_label.setText(result)
 
 
 class CT_Handler:
@@ -36,7 +87,7 @@ class CT_Handler:
     def make_mask(self):
         livermask.livermask.func(os.path.abspath(self.name_of_nifti + ".nii"),
                                  os.path.abspath(self.name_of_nifti),
-                                 cpu, verbose, vessels)
+                                 CPU, VERBOSE, VESSELS)
 
     def whole_liver_brightness_info(self):
         mask_img = nib.load(os.path.join(".", self.name_of_nifti + "-livermask2.nii"))
@@ -125,7 +176,56 @@ class CT_Handler:
 
 class Predictor:
 
-    def most_poweful_criterion(self, value_of_brightness, type_of_average):
+    def fuzzy_criterion_train(self, type_of_average):
+        brightness_data = []
+        with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                brightness_data.append(row)
+
+        train = []
+        train_csv = os.path.join(".", "data", "train.csv")
+        with open(train_csv) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                train.append(row)
+
+        brightness_of_sick_patients = []
+        brightness_of_healthy_patients = []
+        for bd in brightness_data:
+            for t in train:
+                if bd['nii'] == t['nii']:
+                    if float(t['ground_truth']) == 0.0:
+                        brightness_of_healthy_patients.append(float(bd[type_of_average]))
+                    else:
+                        brightness_of_sick_patients.append(float(bd[type_of_average]))
+                    break
+
+        intersection_max_point = max(brightness_of_sick_patients)
+        intersection_min_point = min(brightness_of_healthy_patients)
+
+        healthy_in_intersection = []
+        for brightness in brightness_of_healthy_patients:
+            if brightness < intersection_max_point:
+                healthy_in_intersection.append(brightness)
+
+        sick_in_intersection = []
+        for brightness in brightness_of_sick_patients:
+            if brightness > intersection_min_point:
+                sick_in_intersection.append(brightness)
+
+        if not os.path.exists("config"):
+            os.mkdir("config")
+
+        with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
+                  'w') as f:
+            json.dump(sick_in_intersection, f)
+
+        with open(os.path.join('config', 'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
+                  'w') as f:
+            json.dump(healthy_in_intersection, f)
+
+    def most_powerful_criterion_train(self, type_of_average):
         brightness_data = []
         with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
             reader = csv.DictReader(f)
@@ -223,47 +323,46 @@ class Predictor:
         else:
             border_point = leftmost_point
 
-        if float(value_of_brightness) <= border_point:
+        if not os.path.exists("config"):
+            os.mkdir("config")
+
+        with open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), 'w') as f:
+            f.write(str(border_point))
+
+    def __init__(self):
+        self.types = ["mean", "mode", "median"]
+        for type in self.types:
+            self.most_powerful_criterion_train(type)
+            self.fuzzy_criterion_train(type)
+
+    def most_powerful_criterion(self, value_of_brightness, type_of_average):
+
+        file = open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), "r")
+
+        if float(value_of_brightness) <= float(file.read()):
             return 1.0
         else:
             return 0.0
 
     def fuzzy_criterion(self, value_of_brightness, type_of_average):
-        brightness_data = []
-        with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                brightness_data.append(row)
 
-        train = []
-        train_csv = os.path.join(".", "data", "train.csv")
-        with open(train_csv) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                train.append(row)
-
-        brightness_of_sick_patients = []
-        brightness_of_healthy_patients = []
-        for bd in brightness_data:
-            for t in train:
-                if bd['nii'] == t['nii']:
-                    if float(t['ground_truth']) == 0.0:
-                        brightness_of_healthy_patients.append(float(bd[type_of_average]))
-                    else:
-                        brightness_of_sick_patients.append(float(bd[type_of_average]))
-                    break
-
-        intersection_max_point = max(brightness_of_sick_patients)
-        intersection_min_point = min(brightness_of_healthy_patients)
         intersection = []
-        for b in brightness_of_healthy_patients:
-            if b < intersection_max_point:
-                intersection.append([0, b])
-        for b in brightness_of_sick_patients:
-            if b > intersection_min_point:
-                intersection.append([1, b])
 
-        prediction = 0.5
+        with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
+                  'rb') as f:
+            sick_intersection = json.load(f)
+
+        with open(os.path.join('config', 'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
+                  'rb') as f:
+            healthy_intersection = json.load(f)
+
+        for elem in sick_intersection:
+            intersection.append([1, float(elem)])
+        for elem in healthy_intersection:
+            intersection.append([0, float(elem)])
+
+        intersection_max_point = max(sick_intersection)
+        intersection_min_point = min(healthy_intersection)
 
         if value_of_brightness >= intersection_max_point:
             prediction = 0.0
@@ -279,22 +378,19 @@ class Predictor:
         return prediction
 
 
+def main():
+    files = [f for f in os.listdir('.') if os.path.isfile(f)]
+    for file in files:
+        if ".nii" in file:
+            os.remove(file)
+
+    predictor = Predictor()
+    print("loop test")
+    app = QApplication(sys.argv)
+    window = MainWindow(predictor=predictor)
+    window.show()
+    app.exec()
+
+
 if __name__ == "__main__":
-    print("Enter absolute path to the folder with dicom files: ")
-    folder = input()
-    if os.path.exists(folder):
-        # try:
-        folder_struct = folder.split('/')
-        name_of_nifti = folder_struct[len(folder_struct) - 1]
-        handler = CT_Handler(folder, name_of_nifti)
-        value_of_brightness = handler.three_areas_median_of_brightness()
-        print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
-        predictor = Predictor()
-        print(predictor.fuzzy_criterion(value_of_brightness, "median"))
-        print(predictor.most_poweful_criterion(value_of_brightness, "median"))
-        os.remove(name_of_nifti + ".nii")
-        os.remove(name_of_nifti + "-livermask2.nii")
-    # except:
-    # print("The specified folder cannot be opened")
-    else:
-        print("Wrong path")
+    main()
