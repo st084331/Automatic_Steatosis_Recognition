@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
                 return handler.three_areas_mode_of_brightness()
             elif self.averages_combobox.currentText() == "Mean":
                 return handler.three_areas_mean_of_brightness()
-        return "0.0"
+        return 0.0
 
     def result_request(self, value_of_brightness):
         if self.methods_combobox.currentText() == "Fuzzy criterion":
