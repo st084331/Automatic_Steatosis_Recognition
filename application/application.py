@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         self.predictor = predictor
         super().__init__()
 
-        self.setWindowTitle("My App")
+        self.setWindowTitle("Steatosis Recognizer")
 
         self.result_label = QLabel()
 
@@ -66,6 +66,36 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(container)
 
+    def brightness_value_request(self, handler):
+        if self.areas_combobox.currentText() == "Whole liver":
+            if self.averages_combobox.currentText() == "Median":
+                return handler.whole_liver_median_of_brightness()
+            elif self.averages_combobox.currentText() == "Mode":
+                return handler.whole_liver_mode_of_brightness()
+            elif self.averages_combobox.currentText() == "Mean":
+                return handler.whole_liver_mean_of_brightness()
+        elif self.areas_combobox.currentText() == "Three random areas":
+            if self.averages_combobox.currentText() == "Median":
+                return handler.three_areas_median_of_brightness()
+            elif self.averages_combobox.currentText() == "Mode":
+                return handler.three_areas_mode_of_brightness()
+            elif self.averages_combobox.currentText() == "Mean":
+                return handler.three_areas_mean_of_brightness()
+        return "0.0"
+
+    def result_request(self, value_of_brightness):
+        if self.methods_combobox.currentText() == "Fuzzy criterion":
+            return "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness,
+                                                                   self.averages_combobox.currentText().lower()))
+        elif self.methods_combobox.currentText() == "Most powerful criterion":
+            return "Result: " + str(self.predictor.most_powerful_criterion(value_of_brightness,
+                                                                           self.averages_combobox.currentText().lower()))
+        return "Result: 0"
+
+    def remove_additional_files(self, name_of_nifti):
+        os.remove(name_of_nifti + ".nii")
+        os.remove(name_of_nifti + "-livermask2.nii")
+
     def handle_button(self):
         folder = str(self.input.text())
         if os.path.exists(folder):
@@ -75,34 +105,14 @@ class MainWindow(QMainWindow):
 
                 handler = CT_Handler(folder, name_of_nifti)
 
-                value_of_brightness = 0
-                if self.areas_combobox.currentText() == "Whole liver":
-                    if self.averages_combobox.currentText() == "Median":
-                        value_of_brightness = handler.whole_liver_median_of_brightness()
-                    elif self.averages_combobox.currentText() == "Mode":
-                        value_of_brightness = handler.whole_liver_mode_of_brightness()
-                    elif self.averages_combobox.currentText() == "Mean":
-                        value_of_brightness = handler.whole_liver_mean_of_brightness()
-                elif self.areas_combobox.currentText() == "Three random areas":
-                    if self.averages_combobox.currentText() == "Median":
-                        value_of_brightness = handler.three_areas_median_of_brightness()
-                    elif self.averages_combobox.currentText() == "Mode":
-                        value_of_brightness = handler.three_areas_mode_of_brightness()
-                    elif self.averages_combobox.currentText() == "Mean":
-                        value_of_brightness = handler.three_areas_mean_of_brightness()
+                value_of_brightness = self.brightness_value_request(handler=handler)
 
                 print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
 
-                result = "Result: 0"
-                if self.methods_combobox.currentText() == "Fuzzy criterion":
-                    result = "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness,
-                                                                             self.averages_combobox.currentText().lower()))
-                elif self.methods_combobox.currentText() == "Most powerful criterion":
-                    result = "Result: " + str(self.predictor.most_powerful_criterion(value_of_brightness,
-                                                                                     self.averages_combobox.currentText().lower()))
+                result = self.result_request(value_of_brightness=value_of_brightness)
 
-                os.remove(name_of_nifti + ".nii")
-                os.remove(name_of_nifti + "-livermask2.nii")
+                self.remove_additional_files(name_of_nifti=name_of_nifti)
+
             except:
                 result = "The specified folder cannot be opened"
         else:
