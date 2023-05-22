@@ -25,6 +25,19 @@ METHODS = ["Fuzzy criterion", "Most powerful criterion"]
 AREAS = ["Whole liver", "Three random areas"]
 AVERAGES = ["Median", "Mode", "Mean"]
 
+class Application:
+
+    def main(self):
+        files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        for file in files:
+            if ".nii" in file:
+                os.remove(file)
+
+        predictor = Predictor()
+        app = QApplication(sys.argv)
+        window = MainWindow(predictor=predictor)
+        window.show()
+        app.exec()
 
 class MainWindow(QMainWindow):
 
@@ -427,18 +440,6 @@ class Predictor:
         return prediction
 
 
-def main():
-    files = [f for f in os.listdir('.') if os.path.isfile(f)]
-    for file in files:
-        if ".nii" in file:
-            os.remove(file)
-
-    predictor = Predictor()
-    app = QApplication(sys.argv)
-    window = MainWindow(predictor=predictor)
-    window.show()
-    app.exec()
-
-
 if __name__ == "__main__":
-    main()
+    steatosis_recognizer = Application()
+    steatosis_recognizer.main()
