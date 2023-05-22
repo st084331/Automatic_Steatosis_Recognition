@@ -55,17 +55,17 @@ class MainWindow(QMainWindow):
     def handle_button(self):
         folder = str(self.input.text())
         if os.path.exists(folder):
-            #try:
-            folder_struct = os.path.split(folder)
-            name_of_nifti = folder_struct[len(folder_struct) - 1]
-            handler = CT_Handler(folder, name_of_nifti)
-            value_of_brightness = handler.three_areas_median_of_brightness()
-            print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
-            result = "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness, "median"))
-            os.remove(name_of_nifti + ".nii")
-            os.remove(name_of_nifti + "-livermask2.nii")
-            #except:
-            #    result = "The specified folder cannot be opened"
+            try:
+                folder_struct = os.path.split(folder)
+                name_of_nifti = folder_struct[len(folder_struct) - 1]
+                handler = CT_Handler(folder, name_of_nifti)
+                value_of_brightness = handler.three_areas_median_of_brightness()
+                print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
+                result = "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness, "median"))
+                os.remove(name_of_nifti + ".nii")
+                os.remove(name_of_nifti + "-livermask2.nii")
+            except:
+                result = "The specified folder cannot be opened"
         else:
             result = "Wrong path"
 
