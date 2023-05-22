@@ -2,12 +2,10 @@ import math
 import os
 import random
 import sys
-
 import nibabel as nib
 from datetime import datetime
 import statistics
-import PyQt5
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QWidget, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QWidget, QPushButton, QComboBox
 import csv
 import dicom2nifti
 import dicom2nifti.settings as settings
@@ -23,6 +21,10 @@ CPU = True
 if torch.cuda.is_available():
     CPU = False
 settings.disable_validate_slice_increment()
+METHODS = ["Fuzzy criterion", "Most powerful criterion"]
+AREAS = ["Whole liver", "Three random areas"]
+AVERAGES = ["Median", "Mode", "Mean"]
+
 
 class MainWindow(QMainWindow):
 
@@ -34,6 +36,15 @@ class MainWindow(QMainWindow):
 
         self.result_label = QLabel()
 
+        self.methods_combobox = QComboBox()
+        self.methods_combobox.addItems(METHODS)
+
+        self.averages_combobox = QComboBox()
+        self.averages_combobox.addItems(AVERAGES)
+
+        self.areas_combobox = QComboBox()
+        self.areas_combobox.addItems(AREAS)
+
         self.help_label = QLabel("Enter the full path to the research folder")
 
         self.input = QLineEdit()
@@ -44,6 +55,9 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(self.help_label)
         layout.addWidget(self.input)
+        layout.addWidget(self.methods_combobox)
+        layout.addWidget(self.averages_combobox)
+        layout.addWidget(self.areas_combobox)
         layout.addWidget(self.button)
         layout.addWidget(self.result_label)
 
@@ -58,10 +72,35 @@ class MainWindow(QMainWindow):
             try:
                 folder_struct = os.path.split(folder)
                 name_of_nifti = folder_struct[len(folder_struct) - 1]
+
                 handler = CT_Handler(folder, name_of_nifti)
-                value_of_brightness = handler.three_areas_median_of_brightness()
+
+                value_of_brightness = 0
+                if self.areas_combobox.currentText() == "Whole liver":
+                    if self.averages_combobox.currentText() == "Median":
+                        value_of_brightness = handler.whole_liver_median_of_brightness()
+                    elif self.averages_combobox.currentText() == "Mode":
+                        value_of_brightness = handler.whole_liver_mode_of_brightness()
+                    elif self.averages_combobox.currentText() == "Mean":
+                        value_of_brightness = handler.whole_liver_mean_of_brightness()
+                elif self.areas_combobox.currentText() == "Three random areas":
+                    if self.averages_combobox.currentText() == "Median":
+                        value_of_brightness = handler.three_areas_median_of_brightness()
+                    elif self.averages_combobox.currentText() == "Mode":
+                        value_of_brightness = handler.three_areas_mode_of_brightness()
+                    elif self.averages_combobox.currentText() == "Mean":
+                        value_of_brightness = handler.three_areas_mean_of_brightness()
+
                 print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
-                result = "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness, "median"))
+
+                result = "Result: 0"
+                if self.methods_combobox.currentText() == "Fuzzy criterion":
+                    result = "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness,
+                                                                             self.averages_combobox.currentText().lower()))
+                elif self.methods_combobox.currentText() == "Most powerful criterion":
+                    result = "Result: " + str(self.predictor.most_powerful_criterion(value_of_brightness,
+                                                                                     self.averages_combobox.currentText().lower()))
+
                 os.remove(name_of_nifti + ".nii")
                 os.remove(name_of_nifti + "-livermask2.nii")
             except:
@@ -385,7 +424,6 @@ def main():
             os.remove(file)
 
     predictor = Predictor()
-    print("loop test")
     app = QApplication(sys.argv)
     window = MainWindow(predictor=predictor)
     window.show()
