@@ -6,7 +6,11 @@ import sys
 import nibabel as nib
 from datetime import datetime
 import statistics
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QWidget, QPushButton, QComboBox
+
+from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtGui import QPalette, QFontMetrics, QStandardItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QWidget, QPushButton, QComboBox, \
+    QStyledItemDelegate, qApp
 import csv
 import dicom2nifti
 import dicom2nifti.settings as settings
@@ -19,7 +23,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 import livermask.livermask
 
-METHODS = ["Fuzzy criterion", "Most powerful criterion", "Linear regression", "Second degree polynomial regression", "All"]
+METHODS = ["Fuzzy criterion", "Most powerful criterion", "Linear regression", "Second degree polynomial regression"]
 AREAS = ["Whole liver", "Three random areas", "Two random areas", "One random area", "100 random points"]
 AVERAGES = ["Median", "Mode", "Mean", "Median low", "Median high", "Median grouped", "First quartile", 'Third quartile']
 
@@ -29,6 +33,123 @@ CPU = True
 if torch.cuda.is_available():
     CPU = False
 settings.disable_validate_slice_increment()
+
+
+class CheckableComboBox(QComboBox):
+    # Subclass Delegate to increase item height
+    class Delegate(QStyledItemDelegate):
+        def sizeHint(self, option, index):
+            size = super().sizeHint(option, index)
+            size.setHeight(20)
+            return size
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Make the combo editable to set a custom text, but readonly
+        self.setEditable(True)
+        self.lineEdit().setReadOnly(True)
+        # Make the lineedit the same color as QPushButton
+        palette = qApp.palette()
+        palette.setBrush(QPalette.Base, palette.button())
+        self.lineEdit().setPalette(palette)
+
+        # Use custom delegate
+        self.setItemDelegate(CheckableComboBox.Delegate())
+
+        # Update the text when an item is toggled
+        self.model().dataChanged.connect(self.updateText)
+
+        # Hide and show popup when clicking the line edit
+        self.lineEdit().installEventFilter(self)
+        self.closeOnLineEditClick = False
+
+        # Prevent popup from closing when clicking on an item
+        self.view().viewport().installEventFilter(self)
+
+    def resizeEvent(self, event):
+        # Recompute text to elide as needed
+        self.updateText()
+        super().resizeEvent(event)
+
+    def eventFilter(self, object, event):
+
+        if object == self.lineEdit():
+            if event.type() == QEvent.MouseButtonRelease:
+                if self.closeOnLineEditClick:
+                    self.hidePopup()
+                else:
+                    self.showPopup()
+                return True
+            return False
+
+        if object == self.view().viewport():
+            if event.type() == QEvent.MouseButtonRelease:
+                index = self.view().indexAt(event.pos())
+                item = self.model().item(index.row())
+
+                if item.checkState() == Qt.Checked:
+                    item.setCheckState(Qt.Unchecked)
+                else:
+                    item.setCheckState(Qt.Checked)
+                return True
+        return False
+
+    def showPopup(self):
+        super().showPopup()
+        # When the popup is displayed, a click on the lineedit should close it
+        self.closeOnLineEditClick = True
+
+    def hidePopup(self):
+        super().hidePopup()
+        # Used to prevent immediate reopening when clicking on the lineEdit
+        self.startTimer(100)
+        # Refresh the display text when closing
+        self.updateText()
+
+    def timerEvent(self, event):
+        # After timeout, kill timer, and reenable click on line edit
+        self.killTimer(event.timerId())
+        self.closeOnLineEditClick = False
+
+    def updateText(self):
+        texts = []
+        for i in range(self.model().rowCount()):
+            if self.model().item(i).checkState() == Qt.Checked:
+                texts.append(self.model().item(i).text())
+        text = ", ".join(texts)
+
+        # Compute elided text (with "...")
+        metrics = QFontMetrics(self.lineEdit().font())
+        elidedText = metrics.elidedText(text, Qt.ElideRight, self.lineEdit().width())
+        self.lineEdit().setText(elidedText)
+
+    def addItem(self, text, data=None):
+        item = QStandardItem()
+        item.setText(text)
+        if data is None:
+            item.setData(text)
+        else:
+            item.setData(data)
+        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+        item.setData(Qt.Unchecked, Qt.CheckStateRole)
+        self.model().appendRow(item)
+
+    def addItems(self, texts, datalist=None):
+        for i, text in enumerate(texts):
+            try:
+                data = datalist[i]
+            except (TypeError, IndexError):
+                data = None
+            self.addItem(text, data)
+
+    def currentData(self):
+        # Return the list of selected items data
+        res = []
+        for i in range(self.model().rowCount()):
+            if self.model().item(i).checkState() == Qt.Checked:
+                res.append(self.model().item(i).data())
+        return res
 
 
 class Application:
@@ -68,6 +189,7 @@ class FormatConverter:
                 raise Exception(f"{type_of_average} type of average is not defined")
             current_types.append(current_type)
 
+        print(f"types_of_average_to_current_types: from {types_of_average} to {current_types}")
         return current_types
 
 
@@ -182,33 +304,60 @@ class FileManager:
 class RequestHandler:
 
     @staticmethod
-    def result_request(values_of_brightness, types_of_average, method):
+    def result_request(values_of_brightness, types_of_average, relative_types_of_average, method):
+
         current_types = FormatConverter.types_of_average_to_current_types(types_of_average=types_of_average)
+        relative_current_types = FormatConverter.types_of_average_to_current_types(
+            types_of_average=relative_types_of_average)
         if method == "Fuzzy criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
-                    return Predictor.fuzzy_criterion(values_of_brightness[0], current_types[0])
+                    return Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
+                                                     type_of_average=current_types[0])
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
                 raise Exception("Incorrect number of brightness values")
+
         elif method == "Most powerful criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
-                    return Predictor.most_powerful_criterion(values_of_brightness[0], current_types[0])
+                    return Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
+                                                             type_of_average=current_types[0])
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
                 raise Exception("Incorrect number of brightness values")
+
+        elif method == "Linear regression":
+            if len(values_of_brightness) >= 1:
+                if len(types_of_average) >= 1:
+                    return Predictor.linear_regression(values_of_brightness=values_of_brightness,
+                                                       types_of_average=current_types,
+                                                       relative_types_of_average=relative_current_types)
+                else:
+                    raise Exception("Incorrect number of types of average")
+            else:
+                raise Exception("Incorrect number of brightness values")
+
+        elif method == "Second degree polynomial regression":
+            if len(values_of_brightness) >= 1:
+                if len(types_of_average) >= 1:
+                    return Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
+                                                           types_of_average=current_types,
+                                                           relative_types_of_average=relative_current_types, degree=2)
+                else:
+                    raise Exception("Incorrect number of types of average")
+            else:
+                raise Exception("Incorrect number of brightness values")
+
         else:
             raise Exception(f"{method} method is not defined")
 
     @staticmethod
-    def brightness_values_request(area, types_of_average, handler):
+    def brightness_values_request(area, types_of_average, relative_types_of_average, handler):
 
-        if area == "Full research":
-            brightness_list = handler.full_img_brightness_info()
-        elif area == "Whole liver":
+        if area == "Whole liver":
             brightness_list = handler.whole_liver_brightness_info()
         elif area == "Three random areas":
             brightness_list = handler.three_areas_brightness_info()
@@ -242,6 +391,28 @@ class RequestHandler:
             else:
                 raise Exception(f"{type_of_average} type of average is not defined")
 
+        if len(relative_types_of_average) > 0:
+            relative_brightness_list = handler.full_img_brightness_info()
+            for type_of_average in relative_types_of_average:
+                if type_of_average == "Median":
+                    brightness_values.append(statistics.median(relative_brightness_list))
+                elif type_of_average == "Median grouped":
+                    brightness_values.append(statistics.median_grouped(relative_brightness_list))
+                elif type_of_average == "Median low":
+                    brightness_values.append(statistics.median_low(relative_brightness_list))
+                elif type_of_average == "Median high":
+                    brightness_values.append(statistics.median_high(relative_brightness_list))
+                elif type_of_average == "First quartile":
+                    brightness_values.append(statistics.quantiles(relative_brightness_list)[0])
+                elif type_of_average == "Third quartile":
+                    brightness_values.append(statistics.quantiles(relative_brightness_list)[2])
+                elif type_of_average == "Mode":
+                    brightness_values.append(statistics.mode(relative_brightness_list))
+                elif type_of_average == "Mean":
+                    brightness_values.append(statistics.mean(relative_brightness_list))
+                else:
+                    raise Exception(f"{type_of_average} type of average is not defined")
+
         return brightness_values
 
 
@@ -254,34 +425,43 @@ class MainWindow(QMainWindow):
 
         self.result_label = QLabel()
 
-        self.method_label = QLabel("Choose method")
-        self.methods_combobox = QComboBox()
-        self.methods_combobox.addItems(METHODS)
-
-        self.average_label = QLabel("Choose type of average")
-        self.averages_combobox = QComboBox()
+        self.averages_label = QLabel("Select the types of average of liver (not 0)")
+        self.averages_combobox = CheckableComboBox()
         self.averages_combobox.addItems(AVERAGES)
 
-        self.area_label = QLabel("Choose area")
-        self.areas_combobox = QComboBox()
-        self.areas_combobox.addItems(AREAS)
+        self.relative_averages_label = QLabel("Select the types of average of whole study")
+        self.relative_averages_combobox = CheckableComboBox()
+        self.relative_averages_combobox.addItems(AVERAGES)
+
+        self.method_label = QLabel("Select method")
+        self.method_combobox = QComboBox()
+        self.method_combobox.addItems(METHODS)
+        self.method_combobox.currentIndexChanged.connect(self.handle_method_combobox)
+
+        self.average_label = QLabel("Select type of average")
+        self.average_combobox = QComboBox()
+        self.average_combobox.addItems(AVERAGES)
+
+        self.area_label = QLabel("Select area")
+        self.area_combobox = QComboBox()
+        self.area_combobox.addItems(AREAS)
 
         self.help_label = QLabel("Enter the full path to the research folder")
 
         self.input = QLineEdit()
 
         self.button = QPushButton("Analyse")
-        self.button.clicked.connect(self.handle_button)
+        self.button.clicked.connect(self.handle_analyse_button)
 
         layout = QVBoxLayout()
         layout.addWidget(self.help_label)
         layout.addWidget(self.input)
         layout.addWidget(self.method_label)
-        layout.addWidget(self.methods_combobox)
+        layout.addWidget(self.method_combobox)
         layout.addWidget(self.average_label)
-        layout.addWidget(self.averages_combobox)
+        layout.addWidget(self.average_combobox)
         layout.addWidget(self.area_label)
-        layout.addWidget(self.areas_combobox)
+        layout.addWidget(self.area_combobox)
         layout.addWidget(self.button)
         layout.addWidget(self.result_label)
 
@@ -290,30 +470,99 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(container)
 
-    def handle_button(self):
-        folder = str(self.input.text())
-        method = self.methods_combobox.currentText()
-        types_of_average = [self.averages_combobox.currentText()]
-        area = self.areas_combobox.currentText()
-        if os.path.exists(folder):
+    def handle_method_combobox(self):
+        method = self.method_combobox.currentText()
 
-            if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
-                folder_struct = os.path.split(folder)
-                name_of_nifti = folder_struct[len(folder_struct) - 1]
+        layout = QVBoxLayout()
+        if method == "All":
+            layout.addWidget(self.help_label)
+            layout.addWidget(self.input)
+            layout.addWidget(self.method_label)
+            layout.addWidget(self.method_combobox)
+            layout.addWidget(self.button)
+            layout.addWidget(self.result_label)
+        elif "regression" in method:
+            self.area_label = QLabel("Select area")
+            self.area_combobox = QComboBox()
+            self.area_combobox.addItems(AREAS)
 
-                values_of_brightness = RequestHandler.brightness_values_request(area=area,
-                                                                                types_of_average=types_of_average,
-                                                                                handler=CT_Handler(folder,
-                                                                                                   name_of_nifti))
+            self.averages_label = QLabel("Select the types of average of liver (not 0)")
+            self.averages_combobox = CheckableComboBox()
+            self.averages_combobox.addItems(AVERAGES)
 
-                result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, method=method) * 100}%"
+            self.relative_averages_label = QLabel("Select the types of average of whole study")
+            self.relative_averages_combobox = CheckableComboBox()
+            self.relative_averages_combobox.addItems(AVERAGES)
 
-                FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
-            else:
-                result = "This is not Dicom folder"
-
+            layout.addWidget(self.help_label)
+            layout.addWidget(self.input)
+            layout.addWidget(self.method_label)
+            layout.addWidget(self.method_combobox)
+            layout.addWidget(self.area_label)
+            layout.addWidget(self.area_combobox)
+            layout.addWidget(self.averages_label)
+            layout.addWidget(self.averages_combobox)
+            layout.addWidget(self.relative_averages_label)
+            layout.addWidget(self.relative_averages_combobox)
+            layout.addWidget(self.button)
+            layout.addWidget(self.result_label)
         else:
-            result = "Wrong path"
+            self.average_label = QLabel("Select type of average")
+            self.average_combobox = QComboBox()
+            self.average_combobox.addItems(AVERAGES)
+
+            self.area_label = QLabel("Select area")
+            self.area_combobox = QComboBox()
+            self.area_combobox.addItems(AREAS)
+
+            layout.addWidget(self.help_label)
+            layout.addWidget(self.input)
+            layout.addWidget(self.method_label)
+            layout.addWidget(self.method_combobox)
+            layout.addWidget(self.average_label)
+            layout.addWidget(self.average_combobox)
+            layout.addWidget(self.area_label)
+            layout.addWidget(self.area_combobox)
+            layout.addWidget(self.button)
+            layout.addWidget(self.result_label)
+        container = QWidget()
+        container.setLayout(layout)
+
+        self.setCentralWidget(container)
+
+    def handle_analyse_button(self):
+        folder = str(self.input.text())
+        method = self.method_combobox.currentText()
+        area = self.area_combobox.currentText()
+        if "regression" in method:
+            types_of_average = self.averages_combobox.currentData()
+            relative_types_of_average = self.relative_averages_combobox.currentData()
+        else:
+            types_of_average = [self.average_combobox.currentText()]
+            relative_types_of_average = []
+        if len(types_of_average) >= 1:
+            if os.path.exists(folder):
+
+                if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
+                    folder_struct = os.path.split(folder)
+                    name_of_nifti = folder_struct[len(folder_struct) - 1]
+
+                    values_of_brightness = RequestHandler.brightness_values_request(area=area,
+                                                                                    types_of_average=types_of_average,
+                                                                                    relative_types_of_average=relative_types_of_average,
+                                                                                    handler=CT_Handler(folder,
+                                                                                                       name_of_nifti))
+
+                    result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method) * 100}%"
+
+                    FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
+                else:
+                    result = "This is not Dicom folder"
+
+            else:
+                result = "Wrong path"
+        else:
+            result = "You must select at least 1 type of average"
 
         self.result_label.setText(result)
 
@@ -514,6 +763,7 @@ class CT_Handler:
             random_points_brightness.append(full_data[rand_z][rand_y][rand_x])
         return random_points_brightness
 
+
 class Predictor:
 
     @staticmethod
@@ -710,6 +960,8 @@ class Predictor:
 
         y_pred = reg.predict([values_of_brightness])
 
+        print("y_pred", y_pred)
+
         return y_pred[0]
 
     @staticmethod
@@ -742,6 +994,8 @@ class Predictor:
 
         poly_x = poly_model.fit_transform([values_of_brightness])
         y_pred = regression_model.predict(poly_x)
+
+        print("y_pred", y_pred)
 
         return y_pred[0]
 
