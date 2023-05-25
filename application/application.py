@@ -1,3 +1,4 @@
+import itertools
 import math
 import os
 import random
@@ -13,9 +14,12 @@ import sklearn
 import sklearn.metrics
 import json
 import torch as torch
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+
 import livermask.livermask
 
-METHODS = ["Fuzzy criterion", "Most powerful criterion", "Linear regression", "Second degree polynomial regression"]
+METHODS = ["Fuzzy criterion", "Most powerful criterion", "Linear regression", "Second degree polynomial regression", "All"]
 AREAS = ["Whole liver", "Three random areas", "Two random areas", "One random area", "100 random points"]
 AVERAGES = ["Median", "Mode", "Mean", "Median low", "Median high", "Median grouped", "First quartile", 'Third quartile']
 
@@ -38,10 +42,48 @@ class Application:
         app.exec()
 
 
+class FormatConverter:
+
+    @staticmethod
+    def types_of_average_to_current_types(types_of_average):
+        current_types = []
+        for type_of_average in types_of_average:
+            if type_of_average == "Median":
+                current_type = "median"
+            elif type_of_average == "Mode":
+                current_type = "mode"
+            elif type_of_average == "Mean":
+                current_type = "mean"
+            elif type_of_average == "Median low":
+                current_type = "median_low"
+            elif type_of_average == "Median high":
+                current_type = "median_high"
+            elif type_of_average == "Median grouped":
+                current_type = "median_grouped"
+            elif type_of_average == "First quartile":
+                current_type = "1"
+            elif type_of_average == "Third quartile":
+                current_type = "3"
+            else:
+                raise Exception(f"{type_of_average} type of average is not defined")
+            current_types.append(current_type)
+
+        return current_types
+
+
 class FileManager:
 
     @staticmethod
-    def load_brightness_data():
+    def load_full_img_brightness_data():
+        full_img_brightness_data = []
+        with open(os.path.join(".", 'data', 'full_brightness' + '.csv')) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                full_img_brightness_data.append(row)
+        return full_img_brightness_data
+
+    @staticmethod
+    def load_whole_liver_brightness_data():
         brightness_data_wo_quantiles = []
         with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
             reader = csv.DictReader(f)
@@ -54,11 +96,11 @@ class FileManager:
             for row in reader:
                 brightness_data_quantiles.append(row)
 
-        brightness_data = []
+        whole_liver_brightness_data = []
         for i in range(len(brightness_data_wo_quantiles)):
-            brightness_data.append({**brightness_data_wo_quantiles[i], **brightness_data_quantiles[i]})
+            whole_liver_brightness_data.append({**brightness_data_wo_quantiles[i], **brightness_data_quantiles[i]})
 
-        return brightness_data
+        return whole_liver_brightness_data
 
     @staticmethod
     def load_test_data():
@@ -140,106 +182,67 @@ class FileManager:
 class RequestHandler:
 
     @staticmethod
-    def result_request(value_of_brightness, type_of_average, method):
+    def result_request(values_of_brightness, types_of_average, method):
+        current_types = FormatConverter.types_of_average_to_current_types(types_of_average=types_of_average)
         if method == "Fuzzy criterion":
-            return Predictor.fuzzy_criterion(value_of_brightness, type_of_average)
+            if len(values_of_brightness) == 1:
+                if len(types_of_average) == 1:
+                    return Predictor.fuzzy_criterion(values_of_brightness[0], current_types[0])
+                else:
+                    raise Exception("Incorrect number of types of average")
+            else:
+                raise Exception("Incorrect number of brightness values")
         elif method == "Most powerful criterion":
-            return Predictor.most_powerful_criterion(value_of_brightness, type_of_average)
-        return 0.0
+            if len(values_of_brightness) == 1:
+                if len(types_of_average) == 1:
+                    return Predictor.most_powerful_criterion(values_of_brightness[0], current_types[0])
+                else:
+                    raise Exception("Incorrect number of types of average")
+            else:
+                raise Exception("Incorrect number of brightness values")
+        else:
+            raise Exception(f"{method} method is not defined")
 
     @staticmethod
-    def brightness_value_request(area, type_of_average, handler):
+    def brightness_values_request(area, types_of_average, handler):
 
-        if area == "Whole liver":
-            if type_of_average == "Median":
-                return handler.whole_liver_median_of_brightness()
-            elif type_of_average == "Median grouped":
-                return handler.whole_liver_median_grouped_of_brightness()
-            elif type_of_average == "Median low":
-                return handler.whole_liver_median_low_of_brightness()
-            elif type_of_average == "Median high":
-                return handler.whole_liver_median_high_of_brightness()
-            elif type_of_average == "First quartile":
-                return handler.whole_liver_first_quartile_of_brightness()
-            elif type_of_average == "Third quartile":
-                return handler.whole_liver_third_quartile_of_brightness()
-            elif type_of_average == "Mode":
-                return handler.whole_liver_mode_of_brightness()
-            elif type_of_average == "Mean":
-                return handler.whole_liver_mean_of_brightness()
-
+        if area == "Full research":
+            brightness_list = handler.full_img_brightness_info()
+        elif area == "Whole liver":
+            brightness_list = handler.whole_liver_brightness_info()
         elif area == "Three random areas":
-            if type_of_average == "Median":
-                return handler.three_areas_median_of_brightness()
-            elif type_of_average == "Median grouped":
-                return handler.three_areas_median_grouped_of_brightness()
-            elif type_of_average == "Median low":
-                return handler.three_areas_median_low_of_brightness()
-            elif type_of_average == "Median high":
-                return handler.three_areas_median_high_of_brightness()
-            elif type_of_average == "First quartile":
-                return handler.three_areas_first_quartile_of_brightness()
-            elif type_of_average == "Third quartile":
-                return handler.three_areas_third_quartile_of_brightness()
-            elif type_of_average == "Mode":
-                return handler.three_areas_mode_of_brightness()
-            elif type_of_average == "Mean":
-                return handler.three_areas_mean_of_brightness()
-
+            brightness_list = handler.three_areas_brightness_info()
         elif area == "Two random areas":
-            if type_of_average == "Median":
-                return handler.two_areas_median_of_brightness()
-            elif type_of_average == "Median grouped":
-                return handler.two_areas_median_grouped_of_brightness()
-            elif type_of_average == "Median low":
-                return handler.two_areas_median_low_of_brightness()
-            elif type_of_average == "Median high":
-                return handler.two_areas_median_high_of_brightness()
-            elif type_of_average == "First quartile":
-                return handler.two_areas_first_quartile_of_brightness()
-            elif type_of_average == "Third quartile":
-                return handler.two_areas_third_quartile_of_brightness()
-            elif type_of_average == "Mode":
-                return handler.two_areas_mode_of_brightness()
-            elif type_of_average == "Mean":
-                return handler.two_areas_mean_of_brightness()
-
+            brightness_list = handler.two_areas_brightness_info()
         elif area == "One random area":
-            if type_of_average == "Median":
-                return handler.one_area_median_of_brightness()
-            elif type_of_average == "Median grouped":
-                return handler.one_area_median_grouped_of_brightness()
-            elif type_of_average == "Median low":
-                return handler.one_area_median_low_of_brightness()
-            elif type_of_average == "Median high":
-                return handler.one_area_median_high_of_brightness()
-            elif type_of_average == "First quartile":
-                return handler.one_area_first_quartile_of_brightness()
-            elif type_of_average == "Third quartile":
-                return handler.one_area_third_quartile_of_brightness()
-            elif type_of_average == "Mode":
-                return handler.one_area_mode_of_brightness()
-            elif type_of_average == "Mean":
-                return handler.one_area_mean_of_brightness()
-
+            brightness_list = handler.one_area_brightness_info()
         elif area == "100 random points":
+            brightness_list = handler.random_points_brightness_info()
+        else:
+            raise Exception(f"{area} area is not defined")
+
+        brightness_values = []
+        for type_of_average in types_of_average:
             if type_of_average == "Median":
-                return handler.random_points_median_of_brightness()
+                brightness_values.append(statistics.median(brightness_list))
             elif type_of_average == "Median grouped":
-                return handler.random_points_median_grouped_of_brightness()
+                brightness_values.append(statistics.median_grouped(brightness_list))
             elif type_of_average == "Median low":
-                return handler.random_points_median_low_of_brightness()
+                brightness_values.append(statistics.median_low(brightness_list))
             elif type_of_average == "Median high":
-                return handler.random_points_median_high_of_brightness()
+                brightness_values.append(statistics.median_high(brightness_list))
             elif type_of_average == "First quartile":
-                return handler.random_points_first_quartile_of_brightness()
+                brightness_values.append(statistics.quantiles(brightness_list)[0])
             elif type_of_average == "Third quartile":
-                return handler.random_points_third_quartile_of_brightness()
+                brightness_values.append(statistics.quantiles(brightness_list)[2])
             elif type_of_average == "Mode":
-                return handler.random_points_mode_of_brightness()
+                brightness_values.append(statistics.mode(brightness_list))
             elif type_of_average == "Mean":
-                return handler.random_points_mean_of_brightness()
-        return 0.0
+                brightness_values.append(statistics.mean(brightness_list))
+            else:
+                raise Exception(f"{type_of_average} type of average is not defined")
+
+        return brightness_values
 
 
 class MainWindow(QMainWindow):
@@ -251,12 +254,15 @@ class MainWindow(QMainWindow):
 
         self.result_label = QLabel()
 
+        self.method_label = QLabel("Choose method")
         self.methods_combobox = QComboBox()
         self.methods_combobox.addItems(METHODS)
 
+        self.average_label = QLabel("Choose type of average")
         self.averages_combobox = QComboBox()
         self.averages_combobox.addItems(AVERAGES)
 
+        self.area_label = QLabel("Choose area")
         self.areas_combobox = QComboBox()
         self.areas_combobox.addItems(AREAS)
 
@@ -270,8 +276,11 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(self.help_label)
         layout.addWidget(self.input)
+        layout.addWidget(self.method_label)
         layout.addWidget(self.methods_combobox)
+        layout.addWidget(self.average_label)
         layout.addWidget(self.averages_combobox)
+        layout.addWidget(self.area_label)
         layout.addWidget(self.areas_combobox)
         layout.addWidget(self.button)
         layout.addWidget(self.result_label)
@@ -284,7 +293,7 @@ class MainWindow(QMainWindow):
     def handle_button(self):
         folder = str(self.input.text())
         method = self.methods_combobox.currentText()
-        type_of_average = self.averages_combobox.currentText()
+        types_of_average = [self.averages_combobox.currentText()]
         area = self.areas_combobox.currentText()
         if os.path.exists(folder):
 
@@ -292,12 +301,12 @@ class MainWindow(QMainWindow):
                 folder_struct = os.path.split(folder)
                 name_of_nifti = folder_struct[len(folder_struct) - 1]
 
-                value_of_brightness = RequestHandler.brightness_value_request(area=area,
-                                                                              type_of_average=type_of_average,
-                                                                              handler=CT_Handler(folder,
-                                                                                                 name_of_nifti))
+                values_of_brightness = RequestHandler.brightness_values_request(area=area,
+                                                                                types_of_average=types_of_average,
+                                                                                handler=CT_Handler(folder,
+                                                                                                   name_of_nifti))
 
-                result = f"The probability of having steatosis is {RequestHandler.result_request(value_of_brightness=value_of_brightness, type_of_average=type_of_average, method=method) * 100}%"
+                result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, method=method) * 100}%"
 
                 FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
             else:
@@ -325,6 +334,19 @@ class CT_Handler:
         livermask.livermask.func(os.path.abspath(self.name_of_nifti + ".nii"),
                                  os.path.abspath(self.name_of_nifti),
                                  CPU, VERBOSE, VESSELS)
+
+    def full_img_brightness_info(self):
+        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_data = full_img.get_fdata()
+
+        full_img_brightness = []
+
+        for z in range(0, full_data.shape[0], 2):
+            for y in range(0, full_data.shape[1], 2):
+                for x in range(0, full_data.shape[2], 2):
+                    full_img_brightness.append(full_data[z][y][x])
+
+        return full_img_brightness
 
     def whole_liver_brightness_info(self):
         mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
@@ -492,183 +514,24 @@ class CT_Handler:
             random_points_brightness.append(full_data[rand_z][rand_y][rand_x])
         return random_points_brightness
 
-    def whole_liver_mode_of_brightness(self):
-        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
-        return statistics.mode(whole_liver_list_of_brightness)
-
-    def whole_liver_mean_of_brightness(self):
-        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
-        return statistics.mean(whole_liver_list_of_brightness)
-
-    def whole_liver_median_of_brightness(self):
-        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
-        return statistics.median(whole_liver_list_of_brightness)
-
-    def whole_liver_median_low_of_brightness(self):
-        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
-        return statistics.median_low(whole_liver_list_of_brightness)
-
-    def whole_liver_median_high_of_brightness(self):
-        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
-        return statistics.median_high(whole_liver_list_of_brightness)
-
-    def whole_liver_median_grouped_of_brightness(self):
-        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
-        return statistics.median_grouped(whole_liver_list_of_brightness)
-
-    def whole_liver_first_quartile_of_brightness(self):
-        whole_liver_brightness = self.whole_liver_brightness_info()
-        return statistics.quantiles(whole_liver_brightness)[0]
-
-    def whole_liver_third_quartile_of_brightness(self):
-        whole_liver_brightness = self.whole_liver_brightness_info()
-        return statistics.quantiles(whole_liver_brightness)[2]
-
-    def three_areas_mode_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.mode(three_areas_brightness)
-
-    def three_areas_mean_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.mean(three_areas_brightness)
-
-    def three_areas_median_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.median(three_areas_brightness)
-
-    def three_areas_median_low_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.median_low(three_areas_brightness)
-
-    def three_areas_median_high_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.median_high(three_areas_brightness)
-
-    def three_areas_median_grouped_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.median_grouped(three_areas_brightness)
-
-    def three_areas_first_quartile_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.quantiles(three_areas_brightness)[0]
-
-    def three_areas_third_quartile_of_brightness(self):
-        three_areas_brightness = self.three_areas_brightness_info()
-        return statistics.quantiles(three_areas_brightness)[2]
-
-    def two_areas_mode_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.mode(two_areas_brightness)
-
-    def two_areas_mean_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.mean(two_areas_brightness)
-
-    def two_areas_median_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.median(two_areas_brightness)
-
-    def two_areas_median_low_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.median_low(two_areas_brightness)
-
-    def two_areas_median_high_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.median_high(two_areas_brightness)
-
-    def two_areas_median_grouped_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.median_grouped(two_areas_brightness)
-
-    def two_areas_first_quartile_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.quantiles(two_areas_brightness)[0]
-
-    def two_areas_third_quartile_of_brightness(self):
-        two_areas_brightness = self.two_areas_brightness_info()
-        return statistics.quantiles(two_areas_brightness)[2]
-
-    def one_area_mode_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.mode(one_area_brightness)
-
-    def one_area_mean_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.mean(one_area_brightness)
-
-    def one_area_median_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.median(one_area_brightness)
-
-    def one_area_median_low_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.median_low(one_area_brightness)
-
-    def one_area_median_high_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.median_high(one_area_brightness)
-
-    def one_area_median_grouped_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.median_grouped(one_area_brightness)
-
-    def one_area_first_quartile_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.quantiles(one_area_brightness)[0]
-
-    def one_area_third_quartile_of_brightness(self):
-        one_area_brightness = self.one_area_brightness_info()
-        return statistics.quantiles(one_area_brightness)[2]
-
-    def random_points_mode_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.mode(random_points_brightness)
-
-    def random_points_mean_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.mean(random_points_brightness)
-
-    def random_points_median_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.median(random_points_brightness)
-
-    def random_points_median_low_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.median_low(random_points_brightness)
-
-    def random_points_median_high_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.median_high(random_points_brightness)
-
-    def random_points_median_grouped_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.median_grouped(random_points_brightness)
-
-    def random_points_first_quartile_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.quantiles(random_points_brightness)[0]
-
-    def random_points_third_quartile_of_brightness(self):
-        random_points_brightness = self.random_points_brightness_info()
-        return statistics.quantiles(random_points_brightness)[2]
-
-
 class Predictor:
 
     @staticmethod
     def make_config():
-        for type in AVERAGES:
-            Predictor.most_powerful_criterion_train(type.lower())
-            Predictor.fuzzy_criterion_train(type.lower())
+        current_types = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
+        for type in current_types:
+            Predictor.most_powerful_criterion_train(type)
+            Predictor.fuzzy_criterion_train(type)
 
     @staticmethod
     def fuzzy_criterion_train(type_of_average):
-        brightness_data = FileManager.load_brightness_data()
+
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
         train = FileManager.load_test_data()
 
         brightness_of_sick_patients = []
         brightness_of_healthy_patients = []
-        for bd in brightness_data:
+        for bd in whole_liver_brightness_data:
             for t in train:
                 if bd['nii'] == t['nii']:
                     if float(t['ground_truth']) == 0.0:
@@ -696,12 +559,12 @@ class Predictor:
 
     @staticmethod
     def most_powerful_criterion_train(type_of_average):
-        brightness_data = FileManager.load_brightness_data()
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
         train = FileManager.load_test_data()
 
         brightness = []
         y = []
-        for bd in brightness_data:
+        for bd in whole_liver_brightness_data:
             for t in train:
                 if bd['nii'] == t['nii']:
                     brightness.append(float(bd[type_of_average]))
@@ -713,7 +576,7 @@ class Predictor:
 
         y_pred_init = []
 
-        for bd in brightness_data:
+        for bd in whole_liver_brightness_data:
             for t in train:
                 if bd['nii'] == t['nii']:
                     if float(bd[type_of_average]) <= border_point:
@@ -734,7 +597,7 @@ class Predictor:
 
             y_pred1 = []
 
-            for bd in brightness_data:
+            for bd in whole_liver_brightness_data:
                 for t in train:
                     if bd['nii'] == t['nii']:
                         if float(bd[type_of_average]) <= point1:
@@ -762,7 +625,7 @@ class Predictor:
 
             y_pred2 = []
 
-            for bd in brightness_data:
+            for bd in whole_liver_brightness_data:
                 for t in train:
                     if bd['nii'] == t['nii']:
                         if float(bd[type_of_average]) <= point2:
@@ -820,6 +683,67 @@ class Predictor:
             prediction = sick_counter / len(intersection)
 
         return prediction
+
+    @staticmethod
+    def linear_regression(values_of_brightness, types_of_average, relative_types_of_average):
+
+        full_img_brightness_data = FileManager.load_full_img_brightness_data()
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+        train = FileManager.load_test_data()
+
+        X = []
+        y = []
+        for t in train:
+            for i in range(len(whole_liver_brightness_data)):
+                if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
+                        full_img_brightness_data[i]['nii']:
+                    row = []
+                    for k in range(len(types_of_average)):
+                        row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
+                    for k in range(len(relative_types_of_average)):
+                        row.append(float(full_img_brightness_data[i][relative_types_of_average[k]]))
+                    X.append(row)
+                    y.append(float(t['ground_truth']))
+                    break
+
+        reg = LinearRegression().fit(X, y)
+
+        y_pred = reg.predict([values_of_brightness])
+
+        return y_pred[0]
+
+    @staticmethod
+    def polynomial_regression(values_of_brightness, types_of_average, relative_types_of_average, degree):
+
+        full_img_brightness_data = FileManager.load_full_img_brightness_data()
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+        train = FileManager.load_test_data()
+
+        X = []
+        y = []
+        for t in train:
+            for i in range(len(whole_liver_brightness_data)):
+                if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
+                        full_img_brightness_data[i]['nii']:
+                    row = []
+                    for k in range(len(types_of_average)):
+                        row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
+                    for k in range(len(relative_types_of_average)):
+                        row.append(float(full_img_brightness_data[i][relative_types_of_average[k]]))
+                    X.append(row)
+                    y.append(float(t['ground_truth']))
+                    break
+
+        poly_model = PolynomialFeatures(degree=degree)
+        poly_x_values = poly_model.fit_transform(X)
+        poly_model.fit(poly_x_values, y)
+        regression_model = LinearRegression()
+        regression_model.fit(poly_x_values, y)
+
+        poly_x = poly_model.fit_transform([values_of_brightness])
+        y_pred = regression_model.predict(poly_x)
+
+        return y_pred[0]
 
 
 if __name__ == "__main__":
