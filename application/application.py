@@ -43,6 +43,14 @@ class Application:
 class FileManager:
 
     @staticmethod
+    def load_mask_image(name_of_nifti):
+        return nib.load(os.path.join(".", name_of_nifti + "-livermask2.nii"))
+
+    @staticmethod
+    def load_original_image(name_of_nifti):
+        return nib.load(os.path.join(".", name_of_nifti + ".nii"))
+
+    @staticmethod
     def load_data_for_fuzzy_criterion(type_of_average):
         with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
                   'rb') as f:
@@ -219,9 +227,9 @@ class CT_Handler:
                                  CPU, VERBOSE, VESSELS)
 
     def whole_liver_brightness_info(self):
-        mask_img = nib.load(os.path.join(".", self.name_of_nifti + "-livermask2.nii"))
+        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
         mask_data = mask_img.get_fdata()
-        full_img = nib.load(os.path.join(".", self.name_of_nifti + ".nii"))
         full_data = full_img.get_fdata()
 
         whole_liver_list_of_brightness = []
@@ -234,9 +242,9 @@ class CT_Handler:
         return whole_liver_list_of_brightness
 
     def three_areas_brightness_info(self):
-        mask_img = nib.load(os.path.join(".", self.name_of_nifti + "-livermask2.nii"))
+        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
         mask_data = mask_img.get_fdata()
-        full_img = nib.load(os.path.join(".", self.name_of_nifti + ".nii"))
         full_data = full_img.get_fdata()
         diameter = int(min(mask_data.shape) / 10)
         three_areas_brightness = []
