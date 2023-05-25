@@ -43,6 +43,24 @@ class Application:
 class FileManager:
 
     @staticmethod
+    def load_data_for_fuzzy_criterion(type_of_average):
+        with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
+                  'rb') as f:
+            sick_intersection = json.load(f)
+
+        with open(os.path.join('config', 'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
+                  'rb') as f:
+            healthy_intersection = json.load(f)
+
+        return [sick_intersection, healthy_intersection]
+
+    @staticmethod
+    def load_data_for_most_powerful_criterion(type_of_average):
+        file = open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), "r")
+        return float(file.read())
+
+
+    @staticmethod
     def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average):
         if not os.path.exists("config"):
             os.mkdir("config")
@@ -434,9 +452,7 @@ class Predictor:
     @staticmethod
     def most_powerful_criterion(value_of_brightness, type_of_average):
 
-        file = open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), "r")
-
-        if float(value_of_brightness) <= float(file.read()):
+        if float(value_of_brightness) <= FileManager.load_data_for_most_powerful_criterion(type_of_average=type_of_average):
             return 1.0
         else:
             return 0.0
@@ -444,16 +460,9 @@ class Predictor:
     @staticmethod
     def fuzzy_criterion(value_of_brightness, type_of_average):
 
+        sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(type_of_average)
+
         intersection = []
-
-        with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
-                  'rb') as f:
-            sick_intersection = json.load(f)
-
-        with open(os.path.join('config', 'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
-                  'rb') as f:
-            healthy_intersection = json.load(f)
-
         for elem in sick_intersection:
             intersection.append([1, float(elem)])
         for elem in healthy_intersection:
@@ -473,7 +482,7 @@ class Predictor:
                     sick_counter += 1
             prediction = sick_counter / len(intersection)
 
-        return float(prediction)
+        return prediction
 
 
 if __name__ == "__main__":
