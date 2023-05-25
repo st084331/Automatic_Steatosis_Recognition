@@ -43,6 +43,25 @@ class Application:
 class FileManager:
 
     @staticmethod
+    def load_brightness_data():
+        brightness_data = []
+        with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                brightness_data.append(row)
+        return brightness_data
+
+    @staticmethod
+    def load_test_data():
+        train = []
+        train_csv = os.path.join(".", "data", "train.csv")
+        with open(train_csv) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                train.append(row)
+        return train
+
+    @staticmethod
     def load_mask_image(name_of_nifti):
         return nib.load(os.path.join(".", name_of_nifti + "-livermask2.nii"))
 
@@ -66,7 +85,6 @@ class FileManager:
     def load_data_for_most_powerful_criterion(type_of_average):
         file = open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), "r")
         return float(file.read())
-
 
     @staticmethod
     def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average):
@@ -315,18 +333,8 @@ class Predictor:
 
     @staticmethod
     def fuzzy_criterion_train(type_of_average):
-        brightness_data = []
-        with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                brightness_data.append(row)
-
-        train = []
-        train_csv = os.path.join(".", "data", "train.csv")
-        with open(train_csv) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                train.append(row)
+        brightness_data = FileManager.load_brightness_data()
+        train = FileManager.load_test_data()
 
         brightness_of_sick_patients = []
         brightness_of_healthy_patients = []
@@ -358,18 +366,8 @@ class Predictor:
 
     @staticmethod
     def most_powerful_criterion_train(type_of_average):
-        brightness_data = []
-        with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                brightness_data.append(row)
-
-        train = []
-        train_csv = os.path.join(".", "data", "train.csv")
-        with open(train_csv) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                train.append(row)
+        brightness_data = FileManager.load_brightness_data()
+        train = FileManager.load_test_data()
 
         brightness = []
         y = []
@@ -460,7 +458,8 @@ class Predictor:
     @staticmethod
     def most_powerful_criterion(value_of_brightness, type_of_average):
 
-        if float(value_of_brightness) <= FileManager.load_data_for_most_powerful_criterion(type_of_average=type_of_average):
+        if float(value_of_brightness) <= FileManager.load_data_for_most_powerful_criterion(
+                type_of_average=type_of_average):
             return 1.0
         else:
             return 0.0
