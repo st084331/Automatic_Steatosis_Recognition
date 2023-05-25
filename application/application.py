@@ -31,9 +31,7 @@ class Application:
 
     def main(self):
         FileManager.delete_residual_files(substr=".nii")
-        for type in AVERAGES:
-            Predictor.most_powerful_criterion_train(type.lower())
-            Predictor.fuzzy_criterion_train(type.lower())
+        Predictor.make_config()
         app = QApplication(sys.argv)
         window = MainWindow()
         window.show()
@@ -330,6 +328,12 @@ class CT_Handler:
 
 
 class Predictor:
+
+    @staticmethod
+    def make_config():
+        for type in AVERAGES:
+            Predictor.most_powerful_criterion_train(type.lower())
+            Predictor.fuzzy_criterion_train(type.lower())
 
     @staticmethod
     def fuzzy_criterion_train(type_of_average):
