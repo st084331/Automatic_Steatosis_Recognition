@@ -15,34 +15,78 @@ import json
 import torch as torch
 import livermask.livermask
 
+METHODS = ["Fuzzy criterion", "Most powerful criterion"]
+AREAS = ["Whole liver", "Three random areas"]
+AVERAGES = ["Median", "Mode", "Mean"]
+
 VESSELS = False
 VERBOSE = False
 CPU = True
 if torch.cuda.is_available():
     CPU = False
 settings.disable_validate_slice_increment()
-METHODS = ["Fuzzy criterion", "Most powerful criterion"]
-AREAS = ["Whole liver", "Three random areas"]
-AVERAGES = ["Median", "Mode", "Mean"]
+
 
 class Application:
 
     def main(self):
-        files = [f for f in os.listdir('.') if os.path.isfile(f)]
-        for file in files:
-            if ".nii" in file:
-                os.remove(file)
-
-        predictor = Predictor()
+        FileManager.delete_residual_files(substr=".nii")
+        for type in AVERAGES:
+            Predictor.most_powerful_criterion_train(type.lower())
+            Predictor.fuzzy_criterion_train(type.lower())
         app = QApplication(sys.argv)
-        window = MainWindow(predictor=predictor)
+        window = MainWindow()
         window.show()
         app.exec()
 
+
+class FileManager:
+
+    @staticmethod
+    def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average):
+        if not os.path.exists("config"):
+            os.mkdir("config")
+
+        with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
+                  'w') as f:
+            json.dump(sick_in_intersection, f)
+
+        with open(os.path.join('config', 'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
+                  'w') as f:
+            json.dump(healthy_in_intersection, f)
+
+    @staticmethod
+    def save_data_for_most_powerful_criterion(border_point, type_of_average):
+        if not os.path.exists("config"):
+            os.mkdir("config")
+
+        with open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), 'w') as f:
+            f.write(str(border_point))
+
+    @staticmethod
+    def remove_additional_files(name_of_nifti):
+        os.remove(name_of_nifti + ".nii")
+        os.remove(name_of_nifti + "-livermask2.nii")
+
+    @staticmethod
+    def delete_residual_files(substr):
+        files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        for file in files:
+            if substr in file:
+                os.remove(file)
+
+    @staticmethod
+    def check_dcm_in_folder(folder, substr):
+        files_in_folder = os.listdir(folder)
+        for file in files_in_folder:
+            if substr in file:
+                return True
+        return False
+
+
 class MainWindow(QMainWindow):
 
-    def __init__(self, predictor):
-        self.predictor = predictor
+    def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Steatosis Recognizer")
@@ -98,33 +142,32 @@ class MainWindow(QMainWindow):
 
     def result_request(self, value_of_brightness):
         if self.methods_combobox.currentText() == "Fuzzy criterion":
-            return "Result: " + str(self.predictor.fuzzy_criterion(value_of_brightness,
-                                                                   self.averages_combobox.currentText().lower()))
+            return "Result: " + str(Predictor.fuzzy_criterion(value_of_brightness,
+                                                              self.averages_combobox.currentText().lower()))
         elif self.methods_combobox.currentText() == "Most powerful criterion":
-            return "Result: " + str(self.predictor.most_powerful_criterion(value_of_brightness,
-                                                                           self.averages_combobox.currentText().lower()))
+            return "Result: " + str(Predictor.most_powerful_criterion(value_of_brightness,
+                                                                      self.averages_combobox.currentText().lower()))
         return "Result: 0"
-
-    def remove_additional_files(self, name_of_nifti):
-        os.remove(name_of_nifti + ".nii")
-        os.remove(name_of_nifti + "-livermask2.nii")
 
     def handle_button(self):
         folder = str(self.input.text())
         if os.path.exists(folder):
             try:
-                folder_struct = os.path.split(folder)
-                name_of_nifti = folder_struct[len(folder_struct) - 1]
 
-                handler = CT_Handler(folder, name_of_nifti)
+                if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
+                    folder_struct = os.path.split(folder)
+                    name_of_nifti = folder_struct[len(folder_struct) - 1]
+                    handler = CT_Handler(folder, name_of_nifti)
 
-                value_of_brightness = self.brightness_value_request(handler=handler)
+                    value_of_brightness = self.brightness_value_request(handler=handler)
 
-                print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
+                    print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
 
-                result = self.result_request(value_of_brightness=value_of_brightness)
+                    result = self.result_request(value_of_brightness=value_of_brightness)
 
-                self.remove_additional_files(name_of_nifti=name_of_nifti)
+                    FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
+                else:
+                    result = "This is not Dicom folder"
 
             except:
                 result = "The specified folder cannot be opened"
@@ -238,7 +281,8 @@ class CT_Handler:
 
 class Predictor:
 
-    def fuzzy_criterion_train(self, type_of_average):
+    @staticmethod
+    def fuzzy_criterion_train(type_of_average):
         brightness_data = []
         with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
             reader = csv.DictReader(f)
@@ -276,18 +320,12 @@ class Predictor:
             if brightness > intersection_min_point:
                 sick_in_intersection.append(brightness)
 
-        if not os.path.exists("config"):
-            os.mkdir("config")
+        FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=sick_in_intersection,
+                                                  healthy_in_intersection=healthy_in_intersection,
+                                                  type_of_average=type_of_average)
 
-        with open(os.path.join('config', 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
-                  'w') as f:
-            json.dump(sick_in_intersection, f)
-
-        with open(os.path.join('config', 'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
-                  'w') as f:
-            json.dump(healthy_in_intersection, f)
-
-    def most_powerful_criterion_train(self, type_of_average):
+    @staticmethod
+    def most_powerful_criterion_train(type_of_average):
         brightness_data = []
         with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
             reader = csv.DictReader(f)
@@ -385,19 +423,10 @@ class Predictor:
         else:
             border_point = leftmost_point
 
-        if not os.path.exists("config"):
-            os.mkdir("config")
+        FileManager.save_data_for_most_powerful_criterion(border_point=border_point, type_of_average=type_of_average)
 
-        with open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), 'w') as f:
-            f.write(str(border_point))
-
-    def __init__(self):
-        self.types = ["mean", "mode", "median"]
-        for type in self.types:
-            self.most_powerful_criterion_train(type)
-            self.fuzzy_criterion_train(type)
-
-    def most_powerful_criterion(self, value_of_brightness, type_of_average):
+    @staticmethod
+    def most_powerful_criterion(value_of_brightness, type_of_average):
 
         file = open(os.path.join('config', 'most_powerful_criterion_train_' + type_of_average + '.txt'), "r")
 
@@ -406,7 +435,8 @@ class Predictor:
         else:
             return 0.0
 
-    def fuzzy_criterion(self, value_of_brightness, type_of_average):
+    @staticmethod
+    def fuzzy_criterion(value_of_brightness, type_of_average):
 
         intersection = []
 
