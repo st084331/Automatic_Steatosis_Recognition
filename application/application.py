@@ -84,6 +84,35 @@ class FileManager:
         return False
 
 
+class RequestHandler:
+
+    @staticmethod
+    def result_request(value_of_brightness, type_of_average, method):
+        if method == "Fuzzy criterion":
+            return Predictor.fuzzy_criterion(value_of_brightness, type_of_average)
+        elif method == "Most powerful criterion":
+            return Predictor.most_powerful_criterion(value_of_brightness, type_of_average)
+        return 0.0
+
+    @staticmethod
+    def brightness_value_request(area, type_of_average, handler):
+        if area == "Whole liver":
+            if type_of_average == "Median":
+                return handler.whole_liver_median_of_brightness()
+            elif type_of_average == "Mode":
+                return handler.whole_liver_mode_of_brightness()
+            elif type_of_average == "Mean":
+                return handler.whole_liver_mean_of_brightness()
+        elif area == "Three random areas":
+            if type_of_average == "Median":
+                return handler.three_areas_median_of_brightness()
+            elif type_of_average == "Mode":
+                return handler.three_areas_mode_of_brightness()
+            elif type_of_average == "Mean":
+                return handler.three_areas_mean_of_brightness()
+        return 0.0
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self):
@@ -123,34 +152,11 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(container)
 
-    def brightness_value_request(self, handler):
-        if self.areas_combobox.currentText() == "Whole liver":
-            if self.averages_combobox.currentText() == "Median":
-                return handler.whole_liver_median_of_brightness()
-            elif self.averages_combobox.currentText() == "Mode":
-                return handler.whole_liver_mode_of_brightness()
-            elif self.averages_combobox.currentText() == "Mean":
-                return handler.whole_liver_mean_of_brightness()
-        elif self.areas_combobox.currentText() == "Three random areas":
-            if self.averages_combobox.currentText() == "Median":
-                return handler.three_areas_median_of_brightness()
-            elif self.averages_combobox.currentText() == "Mode":
-                return handler.three_areas_mode_of_brightness()
-            elif self.averages_combobox.currentText() == "Mean":
-                return handler.three_areas_mean_of_brightness()
-        return 0.0
-
-    def result_request(self, value_of_brightness):
-        if self.methods_combobox.currentText() == "Fuzzy criterion":
-            return Predictor.fuzzy_criterion(value_of_brightness,
-                                                              self.averages_combobox.currentText().lower())
-        elif self.methods_combobox.currentText() == "Most powerful criterion":
-            return Predictor.most_powerful_criterion(value_of_brightness,
-                                                                      self.averages_combobox.currentText().lower())
-        return 0.0
-
     def handle_button(self):
         folder = str(self.input.text())
+        method = self.methods_combobox.currentText()
+        type_of_average = self.averages_combobox.currentText().lower()
+        area = self.areas_combobox.currentText()
         if os.path.exists(folder):
             try:
 
@@ -158,13 +164,12 @@ class MainWindow(QMainWindow):
                     folder_struct = os.path.split(folder)
                     name_of_nifti = folder_struct[len(folder_struct) - 1]
 
-                    handler = CT_Handler(folder, name_of_nifti)
+                    value_of_brightness = RequestHandler.brightness_value_request(area=area,
+                                                                                  type_of_average=type_of_average,
+                                                                                  handler=CT_Handler(folder,
+                                                                                                     name_of_nifti))
 
-                    value_of_brightness = self.brightness_value_request(handler=handler)
-
-                    print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
-
-                    result = f"The probability of having steatosis is {self.result_request(value_of_brightness=value_of_brightness)*100}%"
+                    result = f"The probability of having steatosis is {RequestHandler.result_request(value_of_brightness=value_of_brightness, type_of_average=type_of_average, method=method) * 100}%"
 
                     FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
                 else:
