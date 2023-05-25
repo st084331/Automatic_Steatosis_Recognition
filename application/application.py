@@ -15,9 +15,9 @@ import json
 import torch as torch
 import livermask.livermask
 
-METHODS = ["Fuzzy criterion", "Most powerful criterion"]
-AREAS = ["Whole liver", "Three random areas"]
-AVERAGES = ["Median", "Mode", "Mean"]
+METHODS = ["Fuzzy criterion", "Most powerful criterion", "Linear regression", "Second degree polynomial regression"]
+AREAS = ["Whole liver", "Three random areas", "Two random areas", "One random area", "100 random points"]
+AVERAGES = ["Median", "Mode", "Mean", "Median low", "Median high", "Median grouped", "First quartile", 'Third quartile']
 
 VESSELS = False
 VERBOSE = False
@@ -42,11 +42,22 @@ class FileManager:
 
     @staticmethod
     def load_brightness_data():
-        brightness_data = []
+        brightness_data_wo_quantiles = []
         with open(os.path.join(".", 'data', 'whole_liver' + '.csv')) as f:
             reader = csv.DictReader(f)
             for row in reader:
-                brightness_data.append(row)
+                brightness_data_wo_quantiles.append(row)
+
+        brightness_data_quantiles = []
+        with open(os.path.join(".", 'data', 'whole_liver_quantiles' + '.csv')) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                brightness_data_quantiles.append(row)
+
+        brightness_data = []
+        for i in range(len(brightness_data_wo_quantiles)):
+            brightness_data.append({**brightness_data_wo_quantiles[i], **brightness_data_quantiles[i]})
+
         return brightness_data
 
     @staticmethod
@@ -138,20 +149,96 @@ class RequestHandler:
 
     @staticmethod
     def brightness_value_request(area, type_of_average, handler):
+
         if area == "Whole liver":
             if type_of_average == "Median":
                 return handler.whole_liver_median_of_brightness()
+            elif type_of_average == "Median grouped":
+                return handler.whole_liver_median_grouped_of_brightness()
+            elif type_of_average == "Median low":
+                return handler.whole_liver_median_low_of_brightness()
+            elif type_of_average == "Median high":
+                return handler.whole_liver_median_high_of_brightness()
+            elif type_of_average == "First quartile":
+                return handler.whole_liver_first_quartile_of_brightness()
+            elif type_of_average == "Third quartile":
+                return handler.whole_liver_third_quartile_of_brightness()
             elif type_of_average == "Mode":
                 return handler.whole_liver_mode_of_brightness()
             elif type_of_average == "Mean":
                 return handler.whole_liver_mean_of_brightness()
+
         elif area == "Three random areas":
             if type_of_average == "Median":
                 return handler.three_areas_median_of_brightness()
+            elif type_of_average == "Median grouped":
+                return handler.three_areas_median_grouped_of_brightness()
+            elif type_of_average == "Median low":
+                return handler.three_areas_median_low_of_brightness()
+            elif type_of_average == "Median high":
+                return handler.three_areas_median_high_of_brightness()
+            elif type_of_average == "First quartile":
+                return handler.three_areas_first_quartile_of_brightness()
+            elif type_of_average == "Third quartile":
+                return handler.three_areas_third_quartile_of_brightness()
             elif type_of_average == "Mode":
                 return handler.three_areas_mode_of_brightness()
             elif type_of_average == "Mean":
                 return handler.three_areas_mean_of_brightness()
+
+        elif area == "Two random areas":
+            if type_of_average == "Median":
+                return handler.two_areas_median_of_brightness()
+            elif type_of_average == "Median grouped":
+                return handler.two_areas_median_grouped_of_brightness()
+            elif type_of_average == "Median low":
+                return handler.two_areas_median_low_of_brightness()
+            elif type_of_average == "Median high":
+                return handler.two_areas_median_high_of_brightness()
+            elif type_of_average == "First quartile":
+                return handler.two_areas_first_quartile_of_brightness()
+            elif type_of_average == "Third quartile":
+                return handler.two_areas_third_quartile_of_brightness()
+            elif type_of_average == "Mode":
+                return handler.two_areas_mode_of_brightness()
+            elif type_of_average == "Mean":
+                return handler.two_areas_mean_of_brightness()
+
+        elif area == "One random area":
+            if type_of_average == "Median":
+                return handler.one_area_median_of_brightness()
+            elif type_of_average == "Median grouped":
+                return handler.one_area_median_grouped_of_brightness()
+            elif type_of_average == "Median low":
+                return handler.one_area_median_low_of_brightness()
+            elif type_of_average == "Median high":
+                return handler.one_area_median_high_of_brightness()
+            elif type_of_average == "First quartile":
+                return handler.one_area_first_quartile_of_brightness()
+            elif type_of_average == "Third quartile":
+                return handler.one_area_third_quartile_of_brightness()
+            elif type_of_average == "Mode":
+                return handler.one_area_mode_of_brightness()
+            elif type_of_average == "Mean":
+                return handler.one_area_mean_of_brightness()
+
+        elif area == "100 random points":
+            if type_of_average == "Median":
+                return handler.random_points_median_of_brightness()
+            elif type_of_average == "Median grouped":
+                return handler.random_points_median_grouped_of_brightness()
+            elif type_of_average == "Median low":
+                return handler.random_points_median_low_of_brightness()
+            elif type_of_average == "Median high":
+                return handler.random_points_median_high_of_brightness()
+            elif type_of_average == "First quartile":
+                return handler.random_points_first_quartile_of_brightness()
+            elif type_of_average == "Third quartile":
+                return handler.random_points_third_quartile_of_brightness()
+            elif type_of_average == "Mode":
+                return handler.random_points_mode_of_brightness()
+            elif type_of_average == "Mean":
+                return handler.random_points_mean_of_brightness()
         return 0.0
 
 
@@ -197,28 +284,25 @@ class MainWindow(QMainWindow):
     def handle_button(self):
         folder = str(self.input.text())
         method = self.methods_combobox.currentText()
-        type_of_average = self.averages_combobox.currentText().lower()
+        type_of_average = self.averages_combobox.currentText()
         area = self.areas_combobox.currentText()
         if os.path.exists(folder):
-            try:
 
-                if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
-                    folder_struct = os.path.split(folder)
-                    name_of_nifti = folder_struct[len(folder_struct) - 1]
+            if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
+                folder_struct = os.path.split(folder)
+                name_of_nifti = folder_struct[len(folder_struct) - 1]
 
-                    value_of_brightness = RequestHandler.brightness_value_request(area=area,
-                                                                                  type_of_average=type_of_average,
-                                                                                  handler=CT_Handler(folder,
-                                                                                                     name_of_nifti))
+                value_of_brightness = RequestHandler.brightness_value_request(area=area,
+                                                                              type_of_average=type_of_average,
+                                                                              handler=CT_Handler(folder,
+                                                                                                 name_of_nifti))
 
-                    result = f"The probability of having steatosis is {RequestHandler.result_request(value_of_brightness=value_of_brightness, type_of_average=type_of_average, method=method) * 100}%"
+                result = f"The probability of having steatosis is {RequestHandler.result_request(value_of_brightness=value_of_brightness, type_of_average=type_of_average, method=method) * 100}%"
 
-                    FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
-                else:
-                    result = "This is not Dicom folder"
+                FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
+            else:
+                result = "This is not Dicom folder"
 
-            except:
-                result = "The specified folder cannot be opened"
         else:
             result = "Wrong path"
 
@@ -302,6 +386,112 @@ class CT_Handler:
 
         return three_areas_brightness
 
+    def two_areas_brightness_info(self):
+        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        mask_data = mask_img.get_fdata()
+        full_data = full_img.get_fdata()
+        diameter = int(min(mask_data.shape) / 10)
+        two_areas_brightness = []
+        for i in range(2):
+            rand_z = random.randint(0, mask_data.shape[0] - 1)
+            rand_y = random.randint(0, mask_data.shape[1] - 1)
+            rand_x = random.randint(0, mask_data.shape[2] - 1)
+            while mask_data[rand_z][rand_y][rand_x] != 1:
+                rand_z = random.randint(0, mask_data.shape[0] - 1)
+                rand_y = random.randint(0, mask_data.shape[1] - 1)
+                rand_x = random.randint(0, mask_data.shape[2] - 1)
+
+            min_z = int(rand_z - diameter / 2)
+            if min_z < 0:
+                min_z = 0
+            max_z = int(rand_z + diameter / 2)
+            if max_z > mask_data.shape[0]:
+                max_z = mask_data.shape[0]
+
+            min_y = int(rand_y - diameter / 2)
+            if min_y < 0:
+                min_y = 0
+            max_y = int(rand_y + diameter / 2)
+            if max_y > mask_data.shape[1]:
+                max_y = mask_data.shape[1]
+
+            min_x = int(rand_x - diameter / 2)
+            if min_x < 0:
+                min_x = 0
+            max_x = int(rand_x + diameter / 2)
+            if max_x > mask_data.shape[2]:
+                max_x = mask_data.shape[2]
+
+            for z in range(min_z, max_z):
+                for y in range(min_y, max_y):
+                    for x in range(min_x, max_x):
+                        if mask_data[z][y][x] == 1:
+                            two_areas_brightness.append(full_data[z][y][x])
+
+        return two_areas_brightness
+
+    def one_area_brightness_info(self):
+        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        mask_data = mask_img.get_fdata()
+        full_data = full_img.get_fdata()
+        diameter = int(min(mask_data.shape) / 10)
+        one_area_brightness = []
+        rand_z = random.randint(0, mask_data.shape[0] - 1)
+        rand_y = random.randint(0, mask_data.shape[1] - 1)
+        rand_x = random.randint(0, mask_data.shape[2] - 1)
+        while mask_data[rand_z][rand_y][rand_x] != 1:
+            rand_z = random.randint(0, mask_data.shape[0] - 1)
+            rand_y = random.randint(0, mask_data.shape[1] - 1)
+            rand_x = random.randint(0, mask_data.shape[2] - 1)
+
+        min_z = int(rand_z - diameter / 2)
+        if min_z < 0:
+            min_z = 0
+        max_z = int(rand_z + diameter / 2)
+        if max_z > mask_data.shape[0]:
+            max_z = mask_data.shape[0]
+
+        min_y = int(rand_y - diameter / 2)
+        if min_y < 0:
+            min_y = 0
+        max_y = int(rand_y + diameter / 2)
+        if max_y > mask_data.shape[1]:
+            max_y = mask_data.shape[1]
+
+        min_x = int(rand_x - diameter / 2)
+        if min_x < 0:
+            min_x = 0
+        max_x = int(rand_x + diameter / 2)
+        if max_x > mask_data.shape[2]:
+            max_x = mask_data.shape[2]
+
+        for z in range(min_z, max_z):
+            for y in range(min_y, max_y):
+                for x in range(min_x, max_x):
+                    if mask_data[z][y][x] == 1:
+                        one_area_brightness.append(full_data[z][y][x])
+
+        return one_area_brightness
+
+    def random_points_brightness_info(self):
+        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        mask_data = mask_img.get_fdata()
+        full_data = full_img.get_fdata()
+        random_points_brightness = []
+        for i in range(100):
+            rand_z = random.randint(0, mask_data.shape[0] - 1)
+            rand_y = random.randint(0, mask_data.shape[1] - 1)
+            rand_x = random.randint(0, mask_data.shape[2] - 1)
+            while mask_data[rand_z][rand_y][rand_x] != 1:
+                rand_z = random.randint(0, mask_data.shape[0] - 1)
+                rand_y = random.randint(0, mask_data.shape[1] - 1)
+                rand_x = random.randint(0, mask_data.shape[2] - 1)
+            random_points_brightness.append(full_data[rand_z][rand_y][rand_x])
+        return random_points_brightness
+
     def whole_liver_mode_of_brightness(self):
         whole_liver_list_of_brightness = self.whole_liver_brightness_info()
         return statistics.mode(whole_liver_list_of_brightness)
@@ -314,6 +504,26 @@ class CT_Handler:
         whole_liver_list_of_brightness = self.whole_liver_brightness_info()
         return statistics.median(whole_liver_list_of_brightness)
 
+    def whole_liver_median_low_of_brightness(self):
+        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
+        return statistics.median_low(whole_liver_list_of_brightness)
+
+    def whole_liver_median_high_of_brightness(self):
+        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
+        return statistics.median_high(whole_liver_list_of_brightness)
+
+    def whole_liver_median_grouped_of_brightness(self):
+        whole_liver_list_of_brightness = self.whole_liver_brightness_info()
+        return statistics.median_grouped(whole_liver_list_of_brightness)
+
+    def whole_liver_first_quartile_of_brightness(self):
+        whole_liver_brightness = self.whole_liver_brightness_info()
+        return statistics.quantiles(whole_liver_brightness)[0]
+
+    def whole_liver_third_quartile_of_brightness(self):
+        whole_liver_brightness = self.whole_liver_brightness_info()
+        return statistics.quantiles(whole_liver_brightness)[2]
+
     def three_areas_mode_of_brightness(self):
         three_areas_brightness = self.three_areas_brightness_info()
         return statistics.mode(three_areas_brightness)
@@ -325,6 +535,122 @@ class CT_Handler:
     def three_areas_median_of_brightness(self):
         three_areas_brightness = self.three_areas_brightness_info()
         return statistics.median(three_areas_brightness)
+
+    def three_areas_median_low_of_brightness(self):
+        three_areas_brightness = self.three_areas_brightness_info()
+        return statistics.median_low(three_areas_brightness)
+
+    def three_areas_median_high_of_brightness(self):
+        three_areas_brightness = self.three_areas_brightness_info()
+        return statistics.median_high(three_areas_brightness)
+
+    def three_areas_median_grouped_of_brightness(self):
+        three_areas_brightness = self.three_areas_brightness_info()
+        return statistics.median_grouped(three_areas_brightness)
+
+    def three_areas_first_quartile_of_brightness(self):
+        three_areas_brightness = self.three_areas_brightness_info()
+        return statistics.quantiles(three_areas_brightness)[0]
+
+    def three_areas_third_quartile_of_brightness(self):
+        three_areas_brightness = self.three_areas_brightness_info()
+        return statistics.quantiles(three_areas_brightness)[2]
+
+    def two_areas_mode_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.mode(two_areas_brightness)
+
+    def two_areas_mean_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.mean(two_areas_brightness)
+
+    def two_areas_median_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.median(two_areas_brightness)
+
+    def two_areas_median_low_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.median_low(two_areas_brightness)
+
+    def two_areas_median_high_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.median_high(two_areas_brightness)
+
+    def two_areas_median_grouped_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.median_grouped(two_areas_brightness)
+
+    def two_areas_first_quartile_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.quantiles(two_areas_brightness)[0]
+
+    def two_areas_third_quartile_of_brightness(self):
+        two_areas_brightness = self.two_areas_brightness_info()
+        return statistics.quantiles(two_areas_brightness)[2]
+
+    def one_area_mode_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.mode(one_area_brightness)
+
+    def one_area_mean_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.mean(one_area_brightness)
+
+    def one_area_median_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.median(one_area_brightness)
+
+    def one_area_median_low_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.median_low(one_area_brightness)
+
+    def one_area_median_high_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.median_high(one_area_brightness)
+
+    def one_area_median_grouped_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.median_grouped(one_area_brightness)
+
+    def one_area_first_quartile_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.quantiles(one_area_brightness)[0]
+
+    def one_area_third_quartile_of_brightness(self):
+        one_area_brightness = self.one_area_brightness_info()
+        return statistics.quantiles(one_area_brightness)[2]
+
+    def random_points_mode_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.mode(random_points_brightness)
+
+    def random_points_mean_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.mean(random_points_brightness)
+
+    def random_points_median_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.median(random_points_brightness)
+
+    def random_points_median_low_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.median_low(random_points_brightness)
+
+    def random_points_median_high_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.median_high(random_points_brightness)
+
+    def random_points_median_grouped_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.median_grouped(random_points_brightness)
+
+    def random_points_first_quartile_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.quantiles(random_points_brightness)[0]
+
+    def random_points_third_quartile_of_brightness(self):
+        random_points_brightness = self.random_points_brightness_info()
+        return statistics.quantiles(random_points_brightness)[2]
 
 
 class Predictor:
