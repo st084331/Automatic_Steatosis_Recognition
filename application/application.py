@@ -142,12 +142,12 @@ class MainWindow(QMainWindow):
 
     def result_request(self, value_of_brightness):
         if self.methods_combobox.currentText() == "Fuzzy criterion":
-            return "Result: " + str(Predictor.fuzzy_criterion(value_of_brightness,
-                                                              self.averages_combobox.currentText().lower()))
+            return Predictor.fuzzy_criterion(value_of_brightness,
+                                                              self.averages_combobox.currentText().lower())
         elif self.methods_combobox.currentText() == "Most powerful criterion":
-            return "Result: " + str(Predictor.most_powerful_criterion(value_of_brightness,
-                                                                      self.averages_combobox.currentText().lower()))
-        return "Result: 0"
+            return Predictor.most_powerful_criterion(value_of_brightness,
+                                                                      self.averages_combobox.currentText().lower())
+        return 0.0
 
     def handle_button(self):
         folder = str(self.input.text())
@@ -157,13 +157,14 @@ class MainWindow(QMainWindow):
                 if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
                     folder_struct = os.path.split(folder)
                     name_of_nifti = folder_struct[len(folder_struct) - 1]
+
                     handler = CT_Handler(folder, name_of_nifti)
 
                     value_of_brightness = self.brightness_value_request(handler=handler)
 
                     print("File parsed successfully", "|", datetime.now().strftime("%H:%M:%S"))
 
-                    result = self.result_request(value_of_brightness=value_of_brightness)
+                    result = f"The probability of having steatosis is {self.result_request(value_of_brightness=value_of_brightness)*100}%"
 
                     FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
                 else:
@@ -467,7 +468,7 @@ class Predictor:
                     sick_counter += 1
             prediction = sick_counter / len(intersection)
 
-        return prediction
+        return float(prediction)
 
 
 if __name__ == "__main__":
