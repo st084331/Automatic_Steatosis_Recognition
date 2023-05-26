@@ -1,7 +1,12 @@
+from datetime import datetime
+
+
 class FormatConverter:
 
     @staticmethod
     def types_of_average_to_current_types(types_of_average):
+        # print(f"Start types_of_average_to_current_types: {types_of_average} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         current_types = []
         for type_of_average in types_of_average:
             if type_of_average == "Median":
@@ -24,5 +29,5 @@ class FormatConverter:
                 raise Exception(f"{type_of_average} type of average is not defined")
             current_types.append(current_type)
 
-        print(f"types_of_average_to_current_types: from {types_of_average} to {current_types}")
+        # print(f"End types_of_average_to_current_types: {current_types} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         return current_types

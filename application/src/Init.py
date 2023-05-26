@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import torch
 from dicom2nifti import settings
 
@@ -10,7 +12,9 @@ VERBOSE = False
 
 if torch.cuda.is_available():
     CPU = False
+    print("CPU mode off |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 else:
     CPU = True
+    print("CPU mode on |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
 settings.disable_validate_slice_increment()

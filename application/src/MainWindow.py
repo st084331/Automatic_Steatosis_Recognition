@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+
 from PyQt5.QtWidgets import QWidget, QComboBox, QLabel, QVBoxLayout, QLineEdit, QPushButton, QMainWindow
 from application.src.CT_Handler import CT_Handler
 from application.src.CheckableComboBox import CheckableComboBox
@@ -10,6 +12,8 @@ from application.src.RequestHandler import RequestHandler
 class MainWindow(QMainWindow):
 
     def __init__(self):
+
+        # print("Start MainWindow __init__ |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         super().__init__()
 
         self.setWindowTitle("Steatosis Recognizer")
@@ -61,18 +65,16 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(container)
 
+        # print("End MainWindow __init__ |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
     def handle_method_combobox(self):
+        # print("Start handle_method_combobox |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         method = self.method_combobox.currentText()
+        # print(f"Switching to method {method} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         layout = QVBoxLayout()
-        if method == "All":
-            layout.addWidget(self.help_label)
-            layout.addWidget(self.input)
-            layout.addWidget(self.method_label)
-            layout.addWidget(self.method_combobox)
-            layout.addWidget(self.button)
-            layout.addWidget(self.result_label)
-        elif "regression" in method:
+        if "regression" in method:
             self.area_label = QLabel("Select area")
             self.area_combobox = QComboBox()
             self.area_combobox.addItems(AREAS)
@@ -121,38 +123,63 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(container)
 
+        # print("End handle_method_combobox |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
     def handle_analyse_button(self):
+        # print(f"Start handle_analyse_button |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         folder = str(self.input.text())
         method = self.method_combobox.currentText()
         area = self.area_combobox.currentText()
+
+        # print(f"folder = {folder}; method = {method}; area = {area}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         if "regression" in method:
             types_of_average = self.averages_combobox.currentData()
             relative_types_of_average = self.relative_averages_combobox.currentData()
         else:
             types_of_average = [self.average_combobox.currentText()]
             relative_types_of_average = []
+
+        # print(f"types_of_average = {types_of_average}; relative_types_of_average = {relative_types_of_average}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         if len(types_of_average) >= 1:
+            # print("len of types_of_average >= 1 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
             if os.path.exists(folder):
+                # print(f"{folder} exists |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                if FileManager.check_dcm_in_folder(folder=folder, substr=".dcm"):
+                substr = ".dcm"
+                if FileManager.check_dcm_in_folder(folder=folder, substr=substr):
+                    # print(f"FileManager.check_dcm_in_folder(folder={folder}, substr={substr}) is True", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
                     folder_struct = os.path.split(folder)
-                    name_of_nifti = folder_struct[len(folder_struct) - 1]
+                    # print(f"folder_struct = {folder_struct}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
+                    name_of_nifti = folder_struct[len(folder_struct) - 1]
+                    # print(f"name_of_nifti = {name_of_nifti}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+                    # print(f"Call RequestHandler.brightness_values_request(area={area}, types_of_average={types_of_average},relative_types_of_average={relative_types_of_average},handler=CT_Handler(folder={folder},name_of_nifti={name_of_nifti})) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
                     values_of_brightness = RequestHandler.brightness_values_request(area=area,
                                                                                     types_of_average=types_of_average,
                                                                                     relative_types_of_average=relative_types_of_average,
-                                                                                    handler=CT_Handler(folder,
-                                                                                                       name_of_nifti))
+                                                                                    handler=CT_Handler(folder=folder,
+                                                                                                       name_of_nifti=name_of_nifti))
+                    # print(f"values_of_brightness = {values_of_brightness}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
+                    # print(f"Call RequestHandler.result_request(values_of_brightness={values_of_brightness}, types_of_average={types_of_average}, relative_types_of_average={relative_types_of_average}, method={method}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
                     result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method) * 100}%"
 
+                    # print(f"Call FileManager.remove_additional_files(name_of_nifti={name_of_nifti})")
                     FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
                 else:
                     result = "This is not Dicom folder"
 
             else:
                 result = "Wrong path"
+
         else:
             result = "You must select at least 1 type of average"
 
         self.result_label.setText(result)
+        # print(f"End handle_analyse_button with result: {result} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])

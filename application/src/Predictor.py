@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 
 import sklearn
 from sklearn.linear_model import LinearRegression
@@ -13,17 +14,31 @@ class Predictor:
 
     @staticmethod
     def make_config():
+        # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print(f"Call FormatConverter.types_of_average_to_current_types(types_of_average={AVERAGES}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         current_types = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
+
         for type in current_types:
-            Predictor.most_powerful_criterion_train(type)
-            Predictor.fuzzy_criterion_train(type)
+            # print(f"Call most_powerful_criterion_train(type_of_average={type}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+            Predictor.most_powerful_criterion_train(type_of_average=type)
+
+            # print(f"Call fuzzy_criterion_train(type_of_average={type}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+            Predictor.fuzzy_criterion_train(type_of_average=type)
+
+        # print("End make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
     def fuzzy_criterion_train(type_of_average):
+        # print("Start fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
+        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+
+        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         train = FileManager.load_test_data()
 
+        # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_of_sick_patients = []
         brightness_of_healthy_patients = []
         for bd in whole_liver_brightness_data:
@@ -48,15 +63,26 @@ class Predictor:
             if brightness > intersection_min_point:
                 sick_in_intersection.append(brightness)
 
+        # print("End finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print(f"Call FileManager.save_data_for_fuzzy_criterion(sick_in_intersection={sick_in_intersection}, healthy_in_intersection={healthy_in_intersection}, type_of_average={type_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=sick_in_intersection,
                                                   healthy_in_intersection=healthy_in_intersection,
                                                   type_of_average=type_of_average)
 
+        # print("End fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
     @staticmethod
     def most_powerful_criterion_train(type_of_average):
+        # print("Start most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+
+        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         train = FileManager.load_test_data()
 
+        # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness = []
         y = []
         for bd in whole_liver_brightness_data:
@@ -141,21 +167,37 @@ class Predictor:
         else:
             border_point = leftmost_point
 
+        # print("End finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print(f"Call FileManager.save_data_for_most_powerful_criterion(border_point={border_point}, type_of_average={type_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         FileManager.save_data_for_most_powerful_criterion(border_point=border_point, type_of_average=type_of_average)
+
+        # print("End most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
     def most_powerful_criterion(value_of_brightness, type_of_average):
 
-        if float(value_of_brightness) <= FileManager.load_data_for_most_powerful_criterion(
-                type_of_average=type_of_average):
+        # print("Start most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print(f"Call FileManager.load_data_for_most_powerful_criterion(type_of_average={type_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        boarder_point = FileManager.load_data_for_most_powerful_criterion(
+            type_of_average=type_of_average)
+
+        if float(value_of_brightness) <= boarder_point:
+            # print("End most_powerful_criterion with 1.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
             return 1.0
         else:
+            # print("End most_powerful_criterion with 0.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
             return 0.0
 
     @staticmethod
     def fuzzy_criterion(value_of_brightness, type_of_average):
+        # print("Start fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(type_of_average)
+        # print(f"Call FileManager.load_data_for_fuzzy_criterion(type_of_average={type_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(
+            type_of_average=type_of_average)
 
         intersection = []
         for elem in sick_intersection:
@@ -177,17 +219,27 @@ class Predictor:
                     sick_counter += 1
             prediction = sick_counter / len(intersection)
 
+        # print(f"End fuzzy_criterion with {prediction} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         return prediction
 
     @staticmethod
     def linear_regression(values_of_brightness, types_of_average, relative_types_of_average):
 
+        # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print("Call FileManager.load_full_img_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_img_brightness_data = FileManager.load_full_img_brightness_data()
+
+        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+
+        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         train = FileManager.load_test_data()
 
         X = []
         y = []
+        # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         for t in train:
             for i in range(len(whole_liver_brightness_data)):
                 if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
@@ -203,21 +255,31 @@ class Predictor:
 
         reg = LinearRegression().fit(X, y)
 
+        # print("End training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
         y_pred = reg.predict([values_of_brightness])
 
-        print("y_pred", y_pred)
+        # print(f"End linear_regression with {y_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         return y_pred[0]
 
     @staticmethod
     def polynomial_regression(values_of_brightness, types_of_average, relative_types_of_average, degree):
 
+        # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # print("Call FileManager.load_full_img_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_img_brightness_data = FileManager.load_full_img_brightness_data()
+
+        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+
+        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         train = FileManager.load_test_data()
 
         X = []
         y = []
+        # print("Start training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         for t in train:
             for i in range(len(whole_liver_brightness_data)):
                 if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
@@ -236,10 +298,11 @@ class Predictor:
         poly_model.fit(poly_x_values, y)
         regression_model = LinearRegression()
         regression_model.fit(poly_x_values, y)
+        # print("End training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         poly_x = poly_model.fit_transform([values_of_brightness])
         y_pred = regression_model.predict(poly_x)
 
-        print("y_pred", y_pred)
+        # print(f"End polynomial_regression with {y_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         return y_pred[0]
