@@ -1,10 +1,8 @@
-import itertools
 import math
 import os
 import random
 import sys
 import nibabel as nib
-from datetime import datetime
 import statistics
 
 from PyQt5.QtCore import QEvent, Qt
