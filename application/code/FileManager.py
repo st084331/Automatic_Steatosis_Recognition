@@ -11,11 +11,11 @@ from application.code.Init import PARENT_PATH
 class FileManager:
 
     @staticmethod
-    def load_full_img_brightness_data():
+    def load_full_img_brightness_data(data):
         # print("Start load_full_img_brightness_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         full_img_brightness_data = []
-        with open(os.path.join(PARENT_PATH, 'data', 'full_brightness' + '.csv')) as f:
+        with open(os.path.join(PARENT_PATH, data, 'full_brightness' + '.csv')) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 full_img_brightness_data.append(row)
@@ -27,17 +27,17 @@ class FileManager:
         return full_img_brightness_data
 
     @staticmethod
-    def load_whole_liver_brightness_data():
+    def load_whole_liver_brightness_data(data):
         # print("Start load_whole_liver_brightness_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         brightness_data_wo_quantiles = []
-        with open(os.path.join(PARENT_PATH, 'data', 'whole_liver' + '.csv')) as f:
+        with open(os.path.join(PARENT_PATH, data, 'whole_liver' + '.csv')) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 brightness_data_wo_quantiles.append(row)
 
         brightness_data_quantiles = []
-        with open(os.path.join(PARENT_PATH, 'data', 'whole_liver_quantiles' + '.csv')) as f:
+        with open(os.path.join(PARENT_PATH, data, 'whole_liver_quantiles' + '.csv')) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 brightness_data_quantiles.append(row)
@@ -52,13 +52,13 @@ class FileManager:
         return whole_liver_brightness_data
 
     @staticmethod
-    def load_test_data():
+    def load_test_data(data):
 
         train = []
 
         # print("Start load_test_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        train_csv = os.path.join(PARENT_PATH, "data", "train.csv")
+        train_csv = os.path.join(PARENT_PATH, data, "train.csv")
         with open(train_csv) as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -92,17 +92,17 @@ class FileManager:
         return nib.load(path)
 
     @staticmethod
-    def load_data_for_fuzzy_criterion(type_of_average):
+    def load_data_for_fuzzy_criterion(type_of_average, config):
 
         # print("Start load_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         with open(
-                os.path.join(PARENT_PATH, 'config',
+                os.path.join(PARENT_PATH, config,
                              'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
                 'rb') as f:
             sick_intersection = json.load(f)
 
-        with open(os.path.join(PARENT_PATH, 'config',
+        with open(os.path.join(PARENT_PATH, config,
                                'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
                   'rb') as f:
             healthy_intersection = json.load(f)
@@ -112,11 +112,11 @@ class FileManager:
         return [sick_intersection, healthy_intersection]
 
     @staticmethod
-    def load_data_for_most_powerful_criterion(type_of_average):
+    def load_data_for_most_powerful_criterion(type_of_average, config):
 
         # print("Start load_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        file = open(os.path.join(PARENT_PATH, 'config', 'most_powerful_criterion_train_' + type_of_average + '.txt'),
+        file = open(os.path.join(PARENT_PATH, config, 'most_powerful_criterion_train_' + type_of_average + '.txt'),
                     "r")
         value = float(file.read())
 
@@ -125,21 +125,21 @@ class FileManager:
         return value
 
     @staticmethod
-    def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average):
+    def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average, config):
 
         # print("Start save_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        if not os.path.exists(os.path.join(PARENT_PATH, "config")):
-            os.mkdir(os.path.join(PARENT_PATH, "config"))
+        if not os.path.exists(os.path.join(PARENT_PATH, config)):
+            os.mkdir(os.path.join(PARENT_PATH, config))
             # print("config dir created |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         with open(
-                os.path.join(PARENT_PATH, 'config',
+                os.path.join(PARENT_PATH, config,
                              'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json'),
                 'w') as f:
             json.dump(sick_in_intersection, f)
 
-        with open(os.path.join(PARENT_PATH, 'config',
+        with open(os.path.join(PARENT_PATH, config,
                                'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json'),
                   'w') as f:
             json.dump(healthy_in_intersection, f)
@@ -147,15 +147,15 @@ class FileManager:
         # print("End save_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
-    def save_data_for_most_powerful_criterion(border_point, type_of_average):
+    def save_data_for_most_powerful_criterion(border_point, type_of_average, config):
 
         # print("Start save_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        if not os.path.exists(os.path.join(PARENT_PATH, "config")):
-            os.mkdir(os.path.join(PARENT_PATH, "config"))
+        if not os.path.exists(os.path.join(PARENT_PATH, config)):
+            os.mkdir(os.path.join(PARENT_PATH, config))
             # print("config dir created |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        with open(os.path.join(PARENT_PATH, 'config', 'most_powerful_criterion_train_' + type_of_average + '.txt'),
+        with open(os.path.join(PARENT_PATH, config, 'most_powerful_criterion_train_' + type_of_average + '.txt'),
                   'w') as f:
             f.write(str(border_point))
 

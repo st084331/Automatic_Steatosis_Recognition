@@ -7,7 +7,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 from application.code.FileManager import FileManager
 from application.code.FormatConverter import FormatConverter
-from application.code.Init import AVERAGES
+from application.code.Init import AVERAGES, DATA, CONFIG
 
 
 class Predictor:
@@ -32,11 +32,11 @@ class Predictor:
     def fuzzy_criterion_train(type_of_average):
         # print("Start fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+        # print("Call FileManager.load_whole_liver_brightness_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data(data=DATA)
 
-        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        train = FileManager.load_test_data()
+        # print("Call FileManager.load_test_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        train = FileManager.load_test_data(data=DATA)
 
         # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_of_sick_patients = []
@@ -68,7 +68,7 @@ class Predictor:
         # print(f"Call FileManager.save_data_for_fuzzy_criterion(sick_in_intersection={sick_in_intersection}, healthy_in_intersection={healthy_in_intersection}, type_of_average={type_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=sick_in_intersection,
                                                   healthy_in_intersection=healthy_in_intersection,
-                                                  type_of_average=type_of_average)
+                                                  type_of_average=type_of_average, config=CONFIG)
 
         # print("End fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -76,11 +76,11 @@ class Predictor:
     def most_powerful_criterion_train(type_of_average):
         # print("Start most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+        # print("Call FileManager.load_whole_liver_brightness_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data(data=DATA)
 
-        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        train = FileManager.load_test_data()
+        # print("Call FileManager.load_test_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        train = FileManager.load_test_data(data=DATA)
 
         # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness = []
@@ -171,7 +171,7 @@ class Predictor:
 
         # print(f"Call FileManager.save_data_for_most_powerful_criterion(border_point={border_point}, type_of_average={type_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        FileManager.save_data_for_most_powerful_criterion(border_point=border_point, type_of_average=type_of_average)
+        FileManager.save_data_for_most_powerful_criterion(border_point=border_point, type_of_average=type_of_average, config=CONFIG)
 
         # print("End most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -228,14 +228,14 @@ class Predictor:
 
         # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_full_img_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img_brightness_data = FileManager.load_full_img_brightness_data()
+        # print("Call FileManager.load_full_img_brightness_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        full_img_brightness_data = FileManager.load_full_img_brightness_data(data=DATA)
 
-        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+        # print("Call FileManager.load_whole_liver_brightness_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data(data=DATA)
 
-        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        train = FileManager.load_test_data()
+        # print("Call FileManager.load_test_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        train = FileManager.load_test_data(data=DATA)
 
         X = []
         y = []
@@ -268,14 +268,14 @@ class Predictor:
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_full_img_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img_brightness_data = FileManager.load_full_img_brightness_data()
+        # print("Call FileManager.load_full_img_brightness_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        full_img_brightness_data = FileManager.load_full_img_brightness_data(data=DATA)
 
-        # print("Call FileManager.load_whole_liver_brightness_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data()
+        # print("Call FileManager.load_whole_liver_brightness_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        whole_liver_brightness_data = FileManager.load_whole_liver_brightness_data(data=DATA)
 
-        # print("Call FileManager.load_test_data() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        train = FileManager.load_test_data()
+        # print("Call FileManager.load_test_data(data=DATA) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        train = FileManager.load_test_data(data=DATA)
 
         X = []
         y = []

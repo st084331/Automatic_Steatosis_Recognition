@@ -6,6 +6,8 @@ from dicom2nifti import settings
 
 CURRENT_PATH = os.getcwd()
 PARENT_PATH = os.path.abspath(os.path.join(CURRENT_PATH, os.pardir))
+CONFIG = "config"
+DATA = "data"
 # print(f"CURRENT_PATH={CURRENT_PATH} PARENT_PATH={PARENT_PATH} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
 METHODS = ["Fuzzy criterion", "Most powerful criterion", "Linear regression", "Second degree polynomial regression"]
