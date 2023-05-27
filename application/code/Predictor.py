@@ -5,9 +5,9 @@ import sklearn
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-from application.src.FileManager import FileManager
-from application.src.FormatConverter import FormatConverter
-from application.src.Init import AVERAGES
+from application.code.FileManager import FileManager
+from application.code.FormatConverter import FormatConverter
+from application.code.Init import AVERAGES
 
 
 class Predictor:

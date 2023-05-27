@@ -2,11 +2,11 @@ import os
 from datetime import datetime
 
 from PyQt5.QtWidgets import QWidget, QComboBox, QLabel, QVBoxLayout, QLineEdit, QPushButton, QMainWindow
-from application.src.CT_Handler import CT_Handler
-from application.src.CheckableComboBox import CheckableComboBox
-from application.src.FileManager import FileManager
-from application.src.Init import AVERAGES, AREAS, METHODS
-from application.src.RequestHandler import RequestHandler
+from application.code.CT_Handler import CT_Handler
+from application.code.CheckableComboBox import CheckableComboBox
+from application.code.FileManager import FileManager
+from application.code.Init import AVERAGES, AREAS, METHODS
+from application.code.RequestHandler import RequestHandler
 
 
 class MainWindow(QMainWindow):

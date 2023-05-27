@@ -4,8 +4,8 @@ from random import randint
 
 import dicom2nifti
 
-from application.src.FileManager import FileManager
-from application.src.Init import CPU, VERBOSE, VESSELS
+from application.code.FileManager import FileManager
+from application.code.Init import CPU, VERBOSE, VESSELS, PARENT_PATH
 from livermask import livermask
 
 
@@ -26,18 +26,17 @@ class CT_Handler:
     def dicom_to_nifti(self):
 
         # print("Start dicom_to_nifti |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        path = os.path.join('.', self.name_of_nifti + ".nii")
+        path = os.path.join(PARENT_PATH, self.name_of_nifti + ".nii")
         dicom2nifti.dicom_series_to_nifti(self.folder, path, reorient_nifti=False)
         # print(f"dicom_to_nifti saved as {path} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     def make_mask(self):
 
         # print("Start CT_Handler make_mask |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        filename_of_nifti = self.name_of_nifti + ".nii"
-        livermask.func(os.path.abspath(filename_of_nifti),
-                       os.path.abspath(self.name_of_nifti),
-                       CPU, VERBOSE, VESSELS)
-        # print(f"make_mask saved as {filename_of_nifti} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        output = os.path.join(PARENT_PATH, self.name_of_nifti)
+        path = os.path.join(PARENT_PATH, self.name_of_nifti + ".nii")
+        livermask.func(path=path, output=output, cpu=CPU, verbose=VERBOSE, vessels=VESSELS)
+        # print(f"make_mask saved as {output} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     def full_img_brightness_info(self):
 

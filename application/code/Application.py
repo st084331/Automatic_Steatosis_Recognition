@@ -3,9 +3,9 @@ from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
 
-from application.src.FileManager import FileManager
-from application.src.MainWindow import MainWindow
-from application.src.Predictor import Predictor
+from application.code.FileManager import FileManager
+from application.code.MainWindow import MainWindow
+from application.code.Predictor import Predictor
 
 
 class Application:

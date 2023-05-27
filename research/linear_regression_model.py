@@ -130,6 +130,7 @@ for place in places:
                                 break
 
                     y_pred = reg.predict(x)
+                    print(x,y_pred)
 
                     log_loss_score = sklearn.metrics.log_loss(y, y_pred)
                     r2_score = sklearn.metrics.r2_score(y, y_pred)

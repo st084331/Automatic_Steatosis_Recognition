@@ -1,8 +1,8 @@
 import statistics
 from datetime import datetime
 
-from application.src.FormatConverter import FormatConverter
-from application.src.Predictor import Predictor
+from application.code.FormatConverter import FormatConverter
+from application.code.Predictor import Predictor
 
 
 class RequestHandler:
