@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QComboBox, QLabel, QVBoxLayout, QLineEdit, 
 from application.code.CT_Handler import CT_Handler
 from application.code.CheckableComboBox import CheckableComboBox
 from application.code.FileManager import FileManager
-from application.code.Init import AVERAGES, AREAS, METHODS
+from application.code.Init import AVERAGES, AREAS, METHODS, PARENT_FOLDER_PATH
 from application.code.RequestHandler import RequestHandler
 
 
@@ -150,28 +150,25 @@ class MainWindow(QMainWindow):
                 # print(f"{folder} exists |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
                 substr = ".dcm"
-                if FileManager.check_dcm_in_folder(folder=folder, substr=substr):
+                if FileManager.check_dcm_in_folder(folder_path=folder, substr=substr):
                     # print(f"FileManager.check_dcm_in_folder(folder={folder}, substr={substr}) is True", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
                     folder_struct = os.path.split(folder)
                     # print(f"folder_struct = {folder_struct}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                    name_of_nifti = folder_struct[len(folder_struct) - 1]
-                    # print(f"name_of_nifti = {name_of_nifti}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                    name_of_nifti_wo_extension = folder_struct[len(folder_struct) - 1]
+                    # print(f"name_of_nifti_wo_extension = {name_of_nifti_wo_extension}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                    # print(f"Call RequestHandler.brightness_values_request(area={area}, types_of_average={types_of_average},relative_types_of_average={relative_types_of_average},handler=CT_Handler(folder={folder},name_of_nifti={name_of_nifti})) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
                     values_of_brightness = RequestHandler.brightness_values_request(area=area,
                                                                                     types_of_average=types_of_average,
                                                                                     relative_types_of_average=relative_types_of_average,
                                                                                     handler=CT_Handler(folder=folder,
-                                                                                                       name_of_nifti=name_of_nifti))
+                                                                                                       name_of_nifti_wo_extension=name_of_nifti_wo_extension))
                     # print(f"values_of_brightness = {values_of_brightness}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                    # print(f"Call RequestHandler.result_request(values_of_brightness={values_of_brightness}, types_of_average={types_of_average}, relative_types_of_average={relative_types_of_average}, method={method}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
                     result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method) * 100}%"
 
-                    # print(f"Call FileManager.remove_additional_files(name_of_nifti={name_of_nifti})")
-                    FileManager.remove_additional_files(name_of_nifti=name_of_nifti)
+                    FileManager.delete_residual_files(".nii", folder_path=PARENT_FOLDER_PATH)
                 else:
                     result = "This is not Dicom folder"
 

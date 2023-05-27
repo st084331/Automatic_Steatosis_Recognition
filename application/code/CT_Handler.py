@@ -1,49 +1,52 @@
 import os
 from datetime import datetime
 from random import randint
-
+import nibabel as nib
 import dicom2nifti
 
-from application.code.FileManager import FileManager
-from application.code.Init import CPU, VERBOSE, VESSELS, PARENT_PATH
+from application.code.Init import VERBOSE, VESSELS, PARENT_FOLDER_PATH, CPU
 from livermask import livermask
 
 
 class CT_Handler:
 
-    def __init__(self, folder, name_of_nifti):
+    def __init__(self, folder, name_of_nifti_wo_extension, dicom_to_nifti_output_folder=PARENT_FOLDER_PATH,
+                 mask_output_folder=PARENT_FOLDER_PATH, mask_input_folder=PARENT_FOLDER_PATH, cpu=CPU,
+                 verbose=VERBOSE, vessels=VESSELS):
 
         # print("Start CT_Handler __init__ |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         self.folder = folder
-        self.name_of_nifti = name_of_nifti
+        self.name_of_nifti_wo_extension = name_of_nifti_wo_extension
+        self.name_of_nifti = name_of_nifti_wo_extension + ".nii"
+        self.mask_file_name = name_of_nifti_wo_extension + "-livermask2.nii"
 
-        # print("Call dicom_to_nifti() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        self.dicom_to_nifti()
+        self.nii_file_path = self.dicom_to_nifti(output_folder=dicom_to_nifti_output_folder)
 
-        # print("Call make_mask() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        self.make_mask()
+        self.mask_file_path = self.make_mask(output_folder=mask_output_folder, input_folder=mask_input_folder, cpu=cpu,
+                                             verbose=verbose,
+                                             vessels=vessels)
 
-    def dicom_to_nifti(self):
+    def dicom_to_nifti(self, output_folder):
 
         # print("Start dicom_to_nifti |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        path = os.path.join(PARENT_PATH, self.name_of_nifti + ".nii")
-        dicom2nifti.dicom_series_to_nifti(self.folder, path, reorient_nifti=False)
-        # print(f"dicom_to_nifti saved as {path} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        output_path = os.path.join(output_folder, self.name_of_nifti)
+        dicom2nifti.dicom_series_to_nifti(self.folder, output_path, reorient_nifti=False)
+        # print(f"dicom_to_nifti saved as {output} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        return output_path
 
-    def make_mask(self):
+    def make_mask(self, output_folder, input_folder, cpu, verbose, vessels):
 
         # print("Start CT_Handler make_mask |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        output = os.path.join(PARENT_PATH, self.name_of_nifti)
-        path = os.path.join(PARENT_PATH, self.name_of_nifti + ".nii")
-        livermask.func(path=path, output=output, cpu=CPU, verbose=VERBOSE, vessels=VESSELS)
+        output_folder_wo_extension = os.path.join(output_folder, self.name_of_nifti_wo_extension)
+        input = os.path.join(input_folder, self.name_of_nifti)
+        livermask.func(path=input, output=output_folder_wo_extension, cpu=cpu, verbose=verbose, vessels=vessels)
         # print(f"make_mask saved as {output} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        return os.path.join(output_folder, self.mask_file_name)
 
-    def full_img_brightness_info(self):
+    def get_full_img_brightness_info(self):
 
-        # print("Call FileManager.load_original_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_img = nib.load(self.nii_file_path)
 
-        # print("Call full_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_data = full_img.get_fdata()
 
         full_img_brightness = []
@@ -57,18 +60,14 @@ class CT_Handler:
 
         return full_img_brightness
 
-    def whole_liver_brightness_info(self):
+    def get_whole_liver_brightness_info(self):
 
-        # print("Call FileManager.load_mask_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        mask_img = nib.load(self.mask_file_path)
 
-        # print("Call FileManager.load_original_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_img = nib.load(self.nii_file_path)
 
-        # print("Call mask_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         mask_data = mask_img.get_fdata()
 
-        # print("Call full_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_data = full_img.get_fdata()
 
         # print("Start of collection whole_liver_list_of_brightness |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -83,18 +82,14 @@ class CT_Handler:
 
         return whole_liver_list_of_brightness
 
-    def three_areas_brightness_info(self):
+    def get_three_areas_brightness_info(self):
 
-        # print("Call FileManager.load_mask_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        mask_img = nib.load(self.mask_file_path)
 
-        # print("Call FileManager.load_original_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_img = nib.load(self.nii_file_path)
 
-        # print("Call mask_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         mask_data = mask_img.get_fdata()
 
-        # print("Call full_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_data = full_img.get_fdata()
 
         diameter = int(min(mask_data.shape) / 10)
@@ -142,18 +137,14 @@ class CT_Handler:
 
         return three_areas_brightness
 
-    def two_areas_brightness_info(self):
+    def get_two_areas_brightness_info(self):
 
-        # print("Call FileManager.load_mask_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        mask_img = nib.load(self.mask_file_path)
 
-        # print("Call FileManager.load_original_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_img = nib.load(self.nii_file_path)
 
-        # print("Call mask_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         mask_data = mask_img.get_fdata()
 
-        # print("Call full_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_data = full_img.get_fdata()
 
         diameter = int(min(mask_data.shape) / 10)
@@ -201,18 +192,14 @@ class CT_Handler:
 
         return two_areas_brightness
 
-    def one_area_brightness_info(self):
+    def get_one_area_brightness_info(self):
 
-        # print("Call FileManager.load_mask_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        mask_img = nib.load(self.mask_file_path)
 
-        # print("Call FileManager.load_original_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_img = nib.load(self.nii_file_path)
 
-        # print("Call mask_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         mask_data = mask_img.get_fdata()
 
-        # print("Call full_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_data = full_img.get_fdata()
 
         diameter = int(min(mask_data.shape) / 10)
@@ -258,18 +245,14 @@ class CT_Handler:
 
         return one_area_brightness
 
-    def random_points_brightness_info(self):
+    def get_random_points_brightness_info(self):
 
-        # print("Call FileManager.load_mask_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        mask_img = FileManager.load_mask_image(name_of_nifti=self.name_of_nifti)
+        mask_img = nib.load(self.mask_file_path)
 
-        # print("Call FileManager.load_original_image(name_of_nifti=self.name_of_nifti) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        full_img = FileManager.load_original_image(name_of_nifti=self.name_of_nifti)
+        full_img = nib.load(self.nii_file_path)
 
-        # print("Call mask_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         mask_data = mask_img.get_fdata()
 
-        # print("Call full_img.get_fdata() |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_data = full_img.get_fdata()
 
         # print("Start of collection random_points_brightness |", datetime.now().strftime("%H:%M:%S.%f")[:-3])

@@ -11,18 +11,15 @@ class RequestHandler:
     def result_request(values_of_brightness, types_of_average, relative_types_of_average, method):
         # print("Start result_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print(f"Call FormatConverter.types_of_average_to_current_types(types_of_average={types_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         current_types = FormatConverter.types_of_average_to_current_types(types_of_average=types_of_average)
 
-        # print(f"Call FormatConverter.types_of_average_to_current_types(types_of_average={relative_types_of_average}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         relative_current_types = FormatConverter.types_of_average_to_current_types(
             types_of_average=relative_types_of_average)
 
         if method == "Fuzzy criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
-                    # print(f"End and Call Predictor.fuzzy_criterion(value_of_brightness={values_of_brightness[0]}, type_of_average={current_types[0]}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                    return Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
+                    result = Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
                                                      type_of_average=current_types[0])
                 else:
                     raise Exception("Incorrect number of types of average")
@@ -32,8 +29,7 @@ class RequestHandler:
         elif method == "Most powerful criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
-                    # print(f"End and Call Predictor.most_powerful_criterion(value_of_brightness={values_of_brightness[0]}, type_of_average={current_types[0]}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                    return Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
+                    result = Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
                                                              type_of_average=current_types[0])
                 else:
                     raise Exception("Incorrect number of types of average")
@@ -43,8 +39,7 @@ class RequestHandler:
         elif method == "Linear regression":
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
-                    # print(f"End and Call Predictor.linear_regression(values_of_brightness={values_of_brightness}, types_of_average={current_types}, relative_types_of_average={relative_current_types}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                    return Predictor.linear_regression(values_of_brightness=values_of_brightness,
+                    result = Predictor.linear_regression(values_of_brightness=values_of_brightness,
                                                        types_of_average=current_types,
                                                        relative_types_of_average=relative_current_types)
                 else:
@@ -55,8 +50,7 @@ class RequestHandler:
         elif method == "Second degree polynomial regression":
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
-                    # print(f"End and Call Predictor.polynomial_regression(values_of_brightness={values_of_brightness}, types_of_average={current_types}, relative_types_of_average={relative_current_types}) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                    return Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
+                    result = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
                                                            types_of_average=current_types,
                                                            relative_types_of_average=relative_current_types, degree=2)
                 else:
@@ -67,19 +61,22 @@ class RequestHandler:
         else:
             raise Exception(f"{method} method is not defined")
 
+        # print(f"End result_request with {result} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        return result
+
     @staticmethod
     def brightness_values_request(area, types_of_average, relative_types_of_average, handler):
         # print("Start brightness_values_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if area == "Whole liver":
-            brightness_list = handler.whole_liver_brightness_info()
+            brightness_list = handler.get_whole_liver_brightness_info()
         elif area == "Three random areas":
-            brightness_list = handler.three_areas_brightness_info()
+            brightness_list = handler.get_three_areas_brightness_info()
         elif area == "Two random areas":
-            brightness_list = handler.two_areas_brightness_info()
+            brightness_list = handler.get_two_areas_brightness_info()
         elif area == "One random area":
-            brightness_list = handler.one_area_brightness_info()
+            brightness_list = handler.get_one_area_brightness_info()
         elif area == "100 random points":
-            brightness_list = handler.random_points_brightness_info()
+            brightness_list = handler.get_random_points_brightness_info()
         else:
             raise Exception(f"{area} area is not defined")
 
