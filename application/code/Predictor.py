@@ -26,15 +26,14 @@ class Predictor:
         # print("End make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
-    def fuzzy_criterion_train(type_of_average):
+    def fuzzy_criterion_train(type_of_average, data_folder_path=DATA_FOLDER_PATH,
+                              config_folder_path=CONFIG_FOLDER_PATH):
         # print("Start fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="whole_liver.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
+        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
                                                                        file_name="whole_liver.csv")
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, "train.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        train = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
+        train = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
 
         # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_of_sick_patients = []
@@ -53,32 +52,34 @@ class Predictor:
 
         healthy_in_intersection = []
         for brightness in brightness_of_healthy_patients:
-            if brightness < intersection_max_point:
+            if brightness < intersection_max_point and intersection_min_point < brightness:
                 healthy_in_intersection.append(brightness)
 
         sick_in_intersection = []
         for brightness in brightness_of_sick_patients:
-            if brightness > intersection_min_point:
+            if brightness < intersection_max_point and intersection_min_point < brightness:
                 sick_in_intersection.append(brightness)
 
         # print("End finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=sick_in_intersection,
                                                   healthy_in_intersection=healthy_in_intersection,
-                                                  type_of_average=type_of_average, config_folder_path=CONFIG_FOLDER_PATH)
+                                                  type_of_average=type_of_average,
+                                                  config_folder_path=config_folder_path)
+
+        return [sick_in_intersection, healthy_in_intersection]
 
         # print("End fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
-    def most_powerful_criterion_train(type_of_average):
+    def most_powerful_criterion_train(type_of_average, data_folder_path=DATA_FOLDER_PATH,
+                                      config_folder_path=CONFIG_FOLDER_PATH):
         # print("Start most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="whole_liver.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
+        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
                                                                        file_name="whole_liver.csv")
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, "train.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        train = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
+        train = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
 
         # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness = []
@@ -168,7 +169,7 @@ class Predictor:
         # print("End finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         FileManager.save_data_for_most_powerful_criterion(border_point=border_point, type_of_average=type_of_average,
-                                                          config_folder_path=CONFIG_FOLDER_PATH)
+                                                          config_folder_path=config_folder_path)
 
         # print("End most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -223,15 +224,12 @@ class Predictor:
 
         # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="full_img.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_img_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
                                                                     file_name="full_img.csv")
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="whole_liver.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
                                                                        file_name="whole_liver.csv")
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, "train.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         train = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
 
         X = []
@@ -266,15 +264,12 @@ class Predictor:
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="full_img.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         full_img_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
                                                                     file_name="full_img.csv")
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="whole_liver.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
                                                                        file_name="whole_liver.csv")
 
-        # print("Call FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, "train.csv) |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         train = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
 
         X = []
