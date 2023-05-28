@@ -21,17 +21,27 @@ class Predictor:
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
                             if type_of_average in bd.keys():
-                                content = str(bd[type_of_average])
-                                if content.replace('.', '', 1).isdigit():
-                                    value = float(content)
+                                bd_content = str(bd[type_of_average])
+                                if str(bd_content).replace('.', '', 1).isdigit():
+                                    bd_value = float(bd_content)
                                 else:
                                     raise ValueError
                             else:
                                 raise Exception(f"{type_of_average} type of average does not exist")
-                            if float(t['ground_truth']) == 0.0:
-                                brightness_of_healthy_patients.append(value)
+
+                            if 'ground_truth' in t.keys():
+                                t_content = t['ground_truth']
+                                if str(t_content).replace('.', '', 1).isdigit():
+                                    t_value = int(t_content)
+                                else:
+                                    raise ValueError
                             else:
-                                brightness_of_sick_patients.append(value)
+                                raise Exception("No ground_truth key in train element")
+
+                            if t_value == 0:
+                                brightness_of_healthy_patients.append(bd_value)
+                            else:
+                                brightness_of_sick_patients.append(bd_value)
                             break
                     else:
                         raise Exception(f"Wrong keys in {t}")
@@ -85,16 +95,24 @@ class Predictor:
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
                             if type_of_average in bd.keys():
-                                content = str(bd[type_of_average])
-                                if content.replace('.', '', 1).isdigit():
-                                    value = float(content)
+                                bd_content = str(bd[type_of_average])
+                                if str(bd_content).replace('.', '', 1).isdigit():
+                                    bd_value = float(bd_content)
                                 else:
                                     raise ValueError
                             else:
                                 raise Exception(f"{type_of_average} type of average does not exist")
 
-                            brightness_list.append(value)
-                            steatosis_status_list.append(int(float(t['ground_truth'])))
+                            brightness_list.append(bd_value)
+                            if 'ground_truth' in t.keys():
+                                t_content = t['ground_truth']
+                                if str(t_content).replace('.', '', 1).isdigit():
+                                    t_value = int(t_content)
+                                else:
+                                    raise ValueError
+                            else:
+                                raise Exception("No ground_truth key in train element")
+                            steatosis_status_list.append(t_value)
                     else:
                         raise Exception(f"Wrong keys in {t}")
                 else:
@@ -113,14 +131,14 @@ class Predictor:
                         if 'nii' in t.keys():
                             if bd['nii'] == t['nii']:
                                 if type_of_average in bd.keys():
-                                    content = str(bd[type_of_average])
-                                    if content.replace('.', '', 1).isdigit():
-                                        value = float(content)
+                                    bd_content = str(bd[type_of_average])
+                                    if str(bd_content).replace('.', '', 1).isdigit():
+                                        bd_value = float(bd_content)
                                     else:
                                         raise ValueError
                                 else:
                                     raise Exception(f"{type_of_average} type of average does not exist")
-                                if value <= border_point:
+                                if bd_value <= border_point:
                                     pred_steatosis_status_list_init.append(1)
                                 else:
                                     pred_steatosis_status_list_init.append(0)
@@ -152,14 +170,14 @@ class Predictor:
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
                                     if type_of_average in bd.keys():
-                                        content = str(bd[type_of_average])
-                                        if content.replace('.', '', 1).isdigit():
-                                            value = float(content)
+                                        bd_content = str(bd[type_of_average])
+                                        if str(bd_content).replace('.', '', 1).isdigit():
+                                            bd_value = float(bd_content)
                                         else:
                                             raise ValueError
                                     else:
                                         raise Exception(f"{type_of_average} type of average does not exist")
-                                    if value <= current_leftmost_point:
+                                    if bd_value <= current_leftmost_point:
                                         pred_steatosis_status_list_leftmost.append(1)
                                     else:
                                         pred_steatosis_status_list_leftmost.append(0)
@@ -196,14 +214,14 @@ class Predictor:
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
                                     if type_of_average in bd.keys():
-                                        content = str(bd[type_of_average])
-                                        if content.replace('.', '', 1).isdigit():
-                                            value = float(content)
+                                        bd_content = str(bd[type_of_average])
+                                        if str(bd_content).replace('.', '', 1).isdigit():
+                                            bd_value = float(bd_content)
                                         else:
                                             raise ValueError
                                     else:
                                         raise Exception(f"{type_of_average} type of average does not exist")
-                                    if value <= current_rightmost_point:
+                                    if bd_value <= current_rightmost_point:
                                         pred_steatosis_status_list_rightmost.append(1)
                                     else:
                                         pred_steatosis_status_list_rightmost.append(0)
@@ -257,7 +275,7 @@ class Predictor:
             if not str(elem).replace(".", "", 1).isdigit():
                 raise ValueError
 
-        if len(sick_intersection) > 0 and len(healthy_intersection) > 0:
+        if len(sick_intersection) == 0 and len(healthy_intersection) == 0:
             raise Exception("Impossible to predict")
 
         if len(sick_intersection) > 0:
@@ -279,7 +297,7 @@ class Predictor:
             for sick in sick_intersection:
                 if sick >= value_of_brightness:
                     sick_counter += 1
-            prediction = float(sick_counter / len(sick_intersection))
+            prediction = float(sick_counter / (len(sick_intersection) + len(healthy_intersection)))
 
         # print(f"End fuzzy_criterion with {prediction} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -304,7 +322,15 @@ class Predictor:
                     for k in range(len(relative_types_of_average)):
                         row.append(float(whole_study_brightness_data[i][relative_types_of_average[k]]))
                     brightness_list.append(row)
-                    steatosis_status_list.append(float(t['ground_truth']))
+                    if 'ground_truth' in t.keys():
+                        t_content = t['ground_truth']
+                        if str(t_content).replace('.', '', 1).isdigit():
+                            t_value = int(t_content)
+                        else:
+                            raise ValueError
+                    else:
+                        raise Exception("No ground_truth key in train element")
+                    steatosis_status_list.append(float(t_value))
                     break
 
         reg = LinearRegression()
@@ -337,7 +363,15 @@ class Predictor:
                     for k in range(len(relative_types_of_average)):
                         row.append(float(whole_study_brightness_data[i][relative_types_of_average[k]]))
                     brightness_list.append(row)
-                    steatosis_status_list.append(float(t['ground_truth']))
+                    if 'ground_truth' in t.keys():
+                        t_content = t['ground_truth']
+                        if str(t_content).replace('.', '', 1).isdigit():
+                            t_value = int(t_content)
+                        else:
+                            raise ValueError
+                    else:
+                        raise Exception("No ground_truth key in train element")
+                    steatosis_status_list.append(float(t_value))
                     break
 
         poly_model = PolynomialFeatures(degree=degree)
