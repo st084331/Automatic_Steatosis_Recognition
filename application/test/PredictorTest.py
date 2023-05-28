@@ -265,8 +265,76 @@ class PredictorTest(unittest.TestCase):
             Predictor.most_powerful_criterion(value_of_brightness=1.0, boarder_point="b")
 
     def test_fuzzy_criterion(self):
-        self.assertEqual(0.25, Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
-                                                         healthy_intersection=[3.0, 3.5]))
+        result = Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
+                                           healthy_intersection=[3.0, 3.5])
+        self.assertEqual(0.25, result)
+
+    def test_fuzzy_criterion_wrong_healthy_intersection(self):
+        with self.assertRaises(ValueError):
+            Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
+                                      healthy_intersection=[3.0, "a"])
+
+    def test_fuzzy_criterion_wrong_sick_intersection(self):
+        with self.assertRaises(ValueError):
+            Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, "b"],
+                                      healthy_intersection=[3.0, 3.5])
+
+    def test_fuzzy_criterion_wrong_value_of_brightness(self):
+        with self.assertRaises(ValueError):
+            Predictor.fuzzy_criterion(value_of_brightness="c", sick_intersection=[4.0, 3.4],
+                                      healthy_intersection=[3.0, 3.5])
+
+    def test_fuzzy_criterion_empty_healthy_intersection(self):
+        result = Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
+                                           healthy_intersection=[])
+        self.assertEqual(1.0, result)
+
+    def test_fuzzy_criterion_empty_sick_intersection(self):
+        result = Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[],
+                                           healthy_intersection=[3.0, 3.5])
+        self.assertEqual(0.0, result)
+
+    def test_fuzzy_criterion_empty_intersection(self):
+        with self.assertRaises(Exception):
+            Predictor.fuzzy_criterion(value_of_brightness=1.0, sick_intersection=[],
+                                      healthy_intersection=[])
+
+    def test_regression_data_maker(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+            types_of_average=["value1"], relative_types_of_average=["value2"])
+        self.assertEqual([[5.0, 2.0]], brightness_list)
+        self.assertEqual([1.0], steatosis_status_list)
+
+    def test_regression_data_maker_wo_relative_types_of_average(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+            whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            types_of_average=["value1"], relative_types_of_average=[])
+        self.assertEqual([[5.0]], brightness_list)
+        self.assertEqual([1.0], steatosis_status_list)
+
+    def test_regression_data_maker_wo_types_of_average(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+            whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            types_of_average=[], relative_types_of_average=["value2"])
+        self.assertEqual([[2.0]], brightness_list)
+        self.assertEqual([1.0], steatosis_status_list)
+
+    def test_regression_data_maker_wo_relative_types_and_types_of_average(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+            whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            types_of_average=[], relative_types_of_average=[])
+        self.assertEqual([[]], brightness_list)
+        self.assertEqual([1.0], steatosis_status_list)
+
 
 
 if __name__ == '__main__':

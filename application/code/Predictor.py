@@ -32,13 +32,13 @@ class Predictor:
                             if 'ground_truth' in t.keys():
                                 t_content = t['ground_truth']
                                 if str(t_content).replace('.', '', 1).isdigit():
-                                    t_value = int(t_content)
+                                    t_value = float(t_content)
                                 else:
                                     raise ValueError
                             else:
                                 raise Exception("No ground_truth key in train element")
 
-                            if t_value == 0:
+                            if t_value == 0.0:
                                 brightness_of_healthy_patients.append(bd_value)
                             else:
                                 brightness_of_sick_patients.append(bd_value)
@@ -107,7 +107,7 @@ class Predictor:
                             if 'ground_truth' in t.keys():
                                 t_content = t['ground_truth']
                                 if str(t_content).replace('.', '', 1).isdigit():
-                                    t_value = int(t_content)
+                                    t_value = float(t_content)
                                 else:
                                     raise ValueError
                             else:
@@ -274,6 +274,8 @@ class Predictor:
         for elem in sick_intersection:
             if not str(elem).replace(".", "", 1).isdigit():
                 raise ValueError
+        if not str(value_of_brightness).replace(".", "", 1).isdigit():
+            raise ValueError
 
         if len(sick_intersection) == 0 and len(healthy_intersection) == 0:
             raise Exception("Impossible to predict")
@@ -304,75 +306,129 @@ class Predictor:
         return prediction
 
     @staticmethod
-    def linear_regression(whole_study_brightness_data, whole_liver_brightness_data, train_data, values_of_brightness,
-                          types_of_average, relative_types_of_average):
-
-        # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
+    def regression_data_maker(whole_study_brightness_data, whole_liver_brightness_data, train_data, types_of_average,
+                              relative_types_of_average):
         brightness_list = []
         steatosis_status_list = []
         # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        for t in train_data:
-            for i in range(len(whole_liver_brightness_data)):
-                if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
-                        whole_study_brightness_data[i]['nii']:
-                    row = []
-                    for k in range(len(types_of_average)):
-                        row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
-                    for k in range(len(relative_types_of_average)):
-                        row.append(float(whole_study_brightness_data[i][relative_types_of_average[k]]))
-                    brightness_list.append(row)
-                    if 'ground_truth' in t.keys():
-                        t_content = t['ground_truth']
-                        if str(t_content).replace('.', '', 1).isdigit():
-                            t_value = int(t_content)
+        if len(relative_types_of_average) > 0:
+            for t in train_data:
+                for wl in whole_liver_brightness_data:
+                    for ws in whole_study_brightness_data:
+                        if 'nii' in wl.keys():
+                            if 'nii' in ws.keys():
+                                if 'nii' in t.keys():
+                                    if t['nii'] == wl['nii'] and t['nii'] == ws['nii']:
+                                        row = []
+                                        for type in types_of_average:
+                                            if type in wl.keys():
+                                                wl_content = str(wl[type])
+                                                if str(wl_content).replace('.', '', 1).isdigit():
+                                                    wl_value = float(wl_content)
+                                                else:
+                                                    raise ValueError
+                                            else:
+                                                raise Exception(f"{type} type of average does not exist")
+                                            row.append(wl_value)
+                                        for type in relative_types_of_average:
+                                            if type in ws.keys():
+                                                ws_content = str(ws[type])
+                                                if str(ws_content).replace('.', '', 1).isdigit():
+                                                    ws_value = float(ws_content)
+                                                else:
+                                                    raise ValueError
+                                            else:
+                                                raise Exception(f"{type} type of average does not exist")
+                                            row.append(ws_value)
+                                        brightness_list.append(row)
+                                        if 'ground_truth' in t.keys():
+                                            t_content = t['ground_truth']
+                                            if str(t_content).replace('.', '', 1).isdigit():
+                                                t_value = float(t_content)
+                                            else:
+                                                raise ValueError
+                                        else:
+                                            raise Exception("No ground_truth key in train element")
+                                        steatosis_status_list.append(t_value)
+                                        break
+                                else:
+                                    raise Exception(f"Wrong keys in {t}")
+                            else:
+                                raise Exception(f"Wrong keys in {ws}")
                         else:
-                            raise ValueError
+                            raise Exception(f"Wrong keys in {wl}")
+        else:
+            for t in train_data:
+                for wl in whole_liver_brightness_data:
+                    if 'nii' in wl.keys():
+                        if 'nii' in t.keys():
+                            if t['nii'] == wl['nii']:
+                                row = []
+                                for type in types_of_average:
+                                    if type in wl.keys():
+                                        wl_content = str(wl[type])
+                                        if str(wl_content).replace('.', '', 1).isdigit():
+                                            wl_value = float(wl_content)
+                                        else:
+                                            raise ValueError
+                                    else:
+                                        raise Exception(f"{type} type of average does not exist")
+                                    row.append(wl_value)
+                                brightness_list.append(row)
+                                if 'ground_truth' in t.keys():
+                                    t_content = t['ground_truth']
+                                    if str(t_content).replace('.', '', 1).isdigit():
+                                        t_value = float(t_content)
+                                    else:
+                                        raise ValueError
+                                else:
+                                    raise Exception("No ground_truth key in train element")
+                                steatosis_status_list.append(t_value)
+                                break
+                        else:
+                            raise Exception(f"Wrong keys in {t}")
                     else:
-                        raise Exception("No ground_truth key in train element")
-                    steatosis_status_list.append(float(t_value))
-                    break
+                        raise Exception(f"Wrong keys in {wl}")
+
+        return [brightness_list, steatosis_status_list]
+
+    @staticmethod
+    def linear_regression(values_of_brightness, whole_study_brightness_data, whole_liver_brightness_data, train_data,
+                          types_of_average, relative_types_of_average):
+
+        # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(whole_study_brightness_data,
+                                                                                 whole_liver_brightness_data,
+                                                                                 train_data, types_of_average,
+                                                                                 relative_types_of_average)
+        if len(brightness_list) == 0 or len(steatosis_status_list) == 0:
+            raise Exception("Impossible to predict")
+
+        # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         reg = LinearRegression()
         reg.fit(brightness_list, steatosis_status_list)
 
         # print("End training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        y_pred = reg.predict([values_of_brightness])
+        result_pred = reg.predict([values_of_brightness])
 
-        # print(f"End linear_regression with {y_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        # print(f"End linear_regression with {result_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        return y_pred[0]
+        return result_pred[0]
 
     @staticmethod
     def polynomial_regression(whole_study_brightness_data, whole_liver_brightness_data, train_data,
                               values_of_brightness, types_of_average, relative_types_of_average, degree):
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        brightness_list = []
-        steatosis_status_list = []
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(whole_study_brightness_data,
+                                                                                 whole_liver_brightness_data,
+                                                                                 train_data, types_of_average,
+                                                                                 relative_types_of_average)
+        if len(brightness_list) == 0 or len(steatosis_status_list) == 0:
+            raise Exception("Impossible to predict")
         # print("Start training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        for t in train_data:
-            for i in range(len(whole_liver_brightness_data)):
-                if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
-                        whole_study_brightness_data[i]['nii']:
-                    row = []
-                    for k in range(len(types_of_average)):
-                        row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
-                    for k in range(len(relative_types_of_average)):
-                        row.append(float(whole_study_brightness_data[i][relative_types_of_average[k]]))
-                    brightness_list.append(row)
-                    if 'ground_truth' in t.keys():
-                        t_content = t['ground_truth']
-                        if str(t_content).replace('.', '', 1).isdigit():
-                            t_value = int(t_content)
-                        else:
-                            raise ValueError
-                    else:
-                        raise Exception("No ground_truth key in train element")
-                    steatosis_status_list.append(float(t_value))
-                    break
 
         poly_model = PolynomialFeatures(degree=degree)
         poly_x_values = poly_model.fit_transform(brightness_list)
@@ -382,8 +438,8 @@ class Predictor:
         # print("End training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         poly_x = poly_model.fit_transform([values_of_brightness])
-        y_pred = regression_model.predict(poly_x)
+        result_pred = regression_model.predict(poly_x)
 
-        # print(f"End polynomial_regression with {y_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        # print(f"End polynomial_regression with {result_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        return y_pred[0]
+        return result_pred[0]
