@@ -5,6 +5,7 @@ import sklearn
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
+
 class Predictor:
 
     @staticmethod
@@ -49,12 +50,12 @@ class Predictor:
 
         healthy_in_intersection = []
         for brightness_list in brightness_of_healthy_patients:
-            if brightness_list < intersection_max_point and intersection_min_point < brightness_list:
+            if intersection_max_point >= brightness_list >= intersection_min_point:
                 healthy_in_intersection.append(brightness_list)
 
         sick_in_intersection = []
         for brightness_list in brightness_of_sick_patients:
-            if brightness_list < intersection_max_point and intersection_min_point < brightness_list:
+            if intersection_max_point >= brightness_list >= intersection_min_point:
                 sick_in_intersection.append(brightness_list)
 
         # print("End finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -239,25 +240,33 @@ class Predictor:
     @staticmethod
     def fuzzy_criterion(value_of_brightness, sick_intersection, healthy_intersection):
         # print("Start fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        intersection = []
-        for elem in sick_intersection:
-            intersection.append([1, float(elem)])
         for elem in healthy_intersection:
-            intersection.append([0, float(elem)])
+            if not str(elem).replace(".", "", 1).isdigit():
+                raise ValueError
+        for elem in sick_intersection:
+            if not str(elem).replace(".", "", 1).isdigit():
+                raise ValueError
 
-        intersection_max_point = max(sick_intersection)
-        intersection_min_point = min(healthy_intersection)
+        if len(sick_intersection) > 0:
+            intersection_max_point = max(sick_intersection)
+        else:
+            raise Exception("Impossible to predict, because sick_intersection is empty")
 
-        if value_of_brightness >= intersection_max_point:
+        if len(healthy_intersection) > 0:
+            intersection_min_point = min(healthy_intersection)
+        else:
+            raise Exception("Impossible to predict, because healthy_intersection is empty")
+
+        if value_of_brightness > intersection_max_point:
             prediction = 0.0
-        elif value_of_brightness <= intersection_min_point:
+        elif value_of_brightness < intersection_min_point:
             prediction = 1.0
         else:
             sick_counter = 0
-            for inter in intersection:
-                if inter[1] >= value_of_brightness and inter[0] == 1:
+            for sick in sick_intersection:
+                if sick >= value_of_brightness:
                     sick_counter += 1
-            prediction = sick_counter / len(intersection)
+            prediction = float(sick_counter / len(sick_intersection))
 
         # print(f"End fuzzy_criterion with {prediction} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
