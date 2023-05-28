@@ -13,15 +13,15 @@ from application.code.Init import AVERAGES, DATA_FOLDER_PATH, CONFIG_FOLDER_PATH
 class Predictor:
 
     @staticmethod
-    def make_config():
+    def make_config(averages, data_folder_path=DATA_FOLDER_PATH, config_folder_path=CONFIG_FOLDER_PATH):
         # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        current_types = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
+        for type in averages:
+            Predictor.most_powerful_criterion_train(type_of_average=type, config_folder_path=config_folder_path,
+                                                    data_folder_path=data_folder_path)
 
-        for type in current_types:
-            Predictor.most_powerful_criterion_train(type_of_average=type)
-
-            Predictor.fuzzy_criterion_train(type_of_average=type)
+            Predictor.fuzzy_criterion_train(type_of_average=type, config_folder_path=config_folder_path,
+                                            data_folder_path=data_folder_path)
 
         # print("End make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
