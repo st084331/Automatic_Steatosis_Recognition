@@ -158,15 +158,16 @@ class Predictor:
 
             score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
             leftmost_best_score = score
-            current_leftmost_score = score
             leftmost_point = border_point
+            current_leftmost_score = score
+            current_leftmost_point = border_point
             step = 0.1
 
             while current_leftmost_score >= score:
-                # print(f"leftmost_best_score={leftmost_best_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                # print(f"leftmost_point={leftmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                # print(f"score={score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                score = leftmost_best_score
+                leftmost_best_score = current_leftmost_score
+                leftmost_point = current_leftmost_point
+
+                score = current_leftmost_score
                 current_leftmost_point = leftmost_point - step
 
                 y_pred_leftmost_point = []
@@ -198,21 +199,18 @@ class Predictor:
                 current_leftmost_score = math.fabs(sklearn.metrics.f1_score(y, y_pred_leftmost_point))
                 # print(f"current_leftmost_score={current_leftmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                if current_leftmost_score >= score:
-                    leftmost_best_score = current_leftmost_score
-                    leftmost_point = current_leftmost_point
-
             border_point = (max_point + min_point) / 2
             score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
             rightmost_best_score = score
-            current_rightmost_score = score
             rightmost_point = border_point
+            current_rightmost_score = score
+            current_rightmost_point = border_point
 
             while current_rightmost_score >= score:
-                # print(f"rightmost_best_score={rightmost_best_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                # print(f"rightmost_point={rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                # print(f"score={score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                score = rightmost_best_score
+                rightmost_best_score = current_rightmost_score
+                rightmost_point = current_rightmost_point
+
+                score = current_rightmost_score
                 current_rightmost_point = rightmost_point + step
 
                 y_pred_rightmost_point = []
@@ -243,10 +241,6 @@ class Predictor:
                 # print(f"y_pred_rightmost_point={y_pred_rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
                 current_rightmost_score = math.fabs(sklearn.metrics.f1_score(y, y_pred_rightmost_point))
                 # print(f"current_rightmost_score={current_rightmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-                if current_rightmost_score >= score:
-                    rightmost_best_score = current_rightmost_score
-                    rightmost_point = current_rightmost_point
 
             # print(f"rightmost_point={rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
             # print(f"leftmost_point={leftmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
