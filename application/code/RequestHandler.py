@@ -1,14 +1,17 @@
 import statistics
 from datetime import datetime
 
+from application.code.FileManager import FileManager
 from application.code.FormatConverter import FormatConverter
+from application.code.Init import CONFIG_FOLDER_PATH
 from application.code.Predictor import Predictor
 
 
 class RequestHandler:
 
     @staticmethod
-    def result_request(values_of_brightness, types_of_average, relative_types_of_average, method):
+    def result_request(values_of_brightness, types_of_average, relative_types_of_average, method,
+                       config_folder_path=CONFIG_FOLDER_PATH):
         # print("Start result_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         current_types = FormatConverter.types_of_average_to_current_types(types_of_average=types_of_average)
@@ -20,7 +23,7 @@ class RequestHandler:
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
                     result = Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
-                                                     type_of_average=current_types[0])
+                                                       type_of_average=current_types[0])
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -29,8 +32,10 @@ class RequestHandler:
         elif method == "Most powerful criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
+                    boarder_point = FileManager.load_data_for_most_powerful_criterion(
+                        type_of_average=current_types[0], config_folder_path=config_folder_path)
                     result = Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
-                                                             type_of_average=current_types[0])
+                                                               boarder_point=boarder_point)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -40,8 +45,8 @@ class RequestHandler:
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
                     result = Predictor.linear_regression(values_of_brightness=values_of_brightness,
-                                                       types_of_average=current_types,
-                                                       relative_types_of_average=relative_current_types)
+                                                         types_of_average=current_types,
+                                                         relative_types_of_average=relative_current_types)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -51,8 +56,8 @@ class RequestHandler:
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
                     result = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
-                                                           types_of_average=current_types,
-                                                           relative_types_of_average=relative_current_types, degree=2)
+                                                             types_of_average=current_types,
+                                                             relative_types_of_average=relative_current_types, degree=2)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:

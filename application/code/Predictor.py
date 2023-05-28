@@ -262,19 +262,18 @@ class Predictor:
             raise Exception("Brightness list is empty")
 
     @staticmethod
-    def most_powerful_criterion(value_of_brightness, type_of_average):
+    def most_powerful_criterion(value_of_brightness, boarder_point):
 
         # print("Start most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        boarder_point = FileManager.load_data_for_most_powerful_criterion(
-            type_of_average=type_of_average, config_folder_path=CONFIG_FOLDER_PATH)
-
-        if float(value_of_brightness) <= boarder_point:
-            # print("End most_powerful_criterion with 1.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-            return 1.0
+        if str(value_of_brightness).replace(".", "", 1).isdigit():
+            if float(value_of_brightness) <= boarder_point:
+                # print("End most_powerful_criterion with 1.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                return 1.0
+            else:
+                # print("End most_powerful_criterion with 0.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                return 0.0
         else:
-            # print("End most_powerful_criterion with 0.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-            return 0.0
+            raise ValueError
 
     @staticmethod
     def fuzzy_criterion(value_of_brightness, type_of_average):
