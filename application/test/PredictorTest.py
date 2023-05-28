@@ -335,7 +335,113 @@ class PredictorTest(unittest.TestCase):
         self.assertEqual([[]], brightness_list)
         self.assertEqual([1.0], steatosis_status_list)
 
+    def test_regression_data_maker_wrong_nii_key_whole_liver_brightness_data(self):
+        with self.assertRaises(Exception):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"not_nii": "a", "value1": 5.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
 
+    def test_regression_data_maker_wrong_nii_key_train_data(self):
+        with self.assertRaises(Exception):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+                train_data=[{"not_nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_wrong_nii_key_whole_study_brightness_data(self):
+        with self.assertRaises(Exception):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"not_nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_wrong_types_of_average(self):
+        with self.assertRaises(Exception):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value4"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_wrong_relative_types_of_average(self):
+        with self.assertRaises(Exception):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value4"])
+
+    def test_regression_data_maker_wrong_ground_truth_key(self):
+        with self.assertRaises(Exception):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 5.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "not_ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_wrong_type_of_value_whole_liver_brightness_data(self):
+        with self.assertRaises(ValueError):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": "a", "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_wrong_type_of_value_whole_study_brightness_data(self):
+        with self.assertRaises(ValueError):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": "b", "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_wrong_type_of_ground_truth_train_data(self):
+        with self.assertRaises(ValueError):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": "c"}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
+
+    def test_regression_data_maker_empty_whole_liver_brightness_data(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+            types_of_average=["value1"], relative_types_of_average=["value2"])
+        self.assertEqual([], brightness_list)
+        self.assertEqual([], steatosis_status_list)
+
+    def test_regression_data_maker_empty_train_data(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
+            train_data=[],
+            whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+            types_of_average=["value1"], relative_types_of_average=["value2"])
+        self.assertEqual([], brightness_list)
+        self.assertEqual([], steatosis_status_list)
+
+    def test_regression_data_maker_empty_whole_study_brightness_data(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            whole_study_brightness_data=[],
+            types_of_average=["value1"], relative_types_of_average=["value2"])
+        self.assertEqual([], brightness_list)
+        self.assertEqual([], steatosis_status_list)
+
+    def test_regression_data_maker_empty_whole_study_brightness_data_wo_relative_types_of_average(self):
+        brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+            whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
+            train_data=[{"nii": "a", "ground_truth": 1.0}],
+            whole_study_brightness_data=[],
+            types_of_average=["value1"], relative_types_of_average=[])
+        self.assertEqual([[1.0]], brightness_list)
+        self.assertEqual([1.0], steatosis_status_list)
 
 if __name__ == '__main__':
     unittest.main()
