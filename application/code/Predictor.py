@@ -5,10 +5,6 @@ import sklearn
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-from application.code.FileManager import FileManager
-from application.code.Init import DATA_FOLDER_PATH, CONFIG_FOLDER_PATH
-
-
 class Predictor:
 
     @staticmethod
@@ -163,7 +159,8 @@ class Predictor:
                             raise Exception(f"Wrong keys in {bd}")
 
                 # print(f"pred_steatosis_status_list_leftmost={pred_steatosis_status_list_leftmost}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                current_leftmost_score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_leftmost))
+                current_leftmost_score = math.fabs(
+                    sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_leftmost))
                 # print(f"current_leftmost_score={current_leftmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
             border_point = (max_point + min_point) / 2
@@ -206,7 +203,8 @@ class Predictor:
                             raise Exception(f"Wrong keys in {bd}")
 
                 # print(f"pred_steatosis_status_list_rightmost={pred_steatosis_status_list_rightmost}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                current_rightmost_score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_rightmost))
+                current_rightmost_score = math.fabs(
+                    sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_rightmost))
                 # print(f"current_rightmost_score={current_rightmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
             # print(f"rightmost_point={rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -228,8 +226,8 @@ class Predictor:
     def most_powerful_criterion(value_of_brightness, boarder_point):
 
         # print("Start most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        if str(value_of_brightness).replace(".", "", 1).isdigit():
-            if float(value_of_brightness) <= boarder_point:
+        if str(value_of_brightness).replace(".", "", 1).isdigit() or str(boarder_point).replace(".", "", 1).isdigit():
+            if float(value_of_brightness) <= float(boarder_point):
                 # print("End most_powerful_criterion with 1.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
                 return 1.0
             else:
@@ -239,12 +237,8 @@ class Predictor:
             raise ValueError
 
     @staticmethod
-    def fuzzy_criterion(value_of_brightness, type_of_average):
+    def fuzzy_criterion(value_of_brightness, sick_intersection, healthy_intersection):
         # print("Start fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(
-            type_of_average=type_of_average)
-
         intersection = []
         for elem in sick_intersection:
             intersection.append([1, float(elem)])
@@ -270,15 +264,10 @@ class Predictor:
         return prediction
 
     @staticmethod
-    def linear_regression(values_of_brightness, types_of_average, relative_types_of_average):
+    def linear_regression(whole_study_brightness_data, whole_liver_brightness_data, train_data, values_of_brightness,
+                          types_of_average, relative_types_of_average):
 
         # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        full_img_brightness_data = FileManager.load_brightness_data(file_name="whole_study.csv")
-
-        whole_liver_brightness_data = FileManager.load_brightness_data(file_name="whole_liver.csv")
-
-        train_data = FileManager.load_brightness_data(file_name="train.csv")
 
         brightness_list = []
         steatosis_status_list = []
@@ -286,12 +275,12 @@ class Predictor:
         for t in train_data:
             for i in range(len(whole_liver_brightness_data)):
                 if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
-                        full_img_brightness_data[i]['nii']:
+                        whole_study_brightness_data[i]['nii']:
                     row = []
                     for k in range(len(types_of_average)):
                         row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
                     for k in range(len(relative_types_of_average)):
-                        row.append(float(full_img_brightness_data[i][relative_types_of_average[k]]))
+                        row.append(float(whole_study_brightness_data[i][relative_types_of_average[k]]))
                     brightness_list.append(row)
                     steatosis_status_list.append(float(t['ground_truth']))
                     break
@@ -308,15 +297,10 @@ class Predictor:
         return y_pred[0]
 
     @staticmethod
-    def polynomial_regression(values_of_brightness, types_of_average, relative_types_of_average, degree):
+    def polynomial_regression(whole_study_brightness_data, whole_liver_brightness_data, train_data,
+                              values_of_brightness, types_of_average, relative_types_of_average, degree):
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        full_img_brightness_data = FileManager.load_brightness_data(file_name="whole_study.csv")
-
-        whole_liver_brightness_data = FileManager.load_brightness_data(file_name="whole_liver.csv")
-
-        train_data = FileManager.load_brightness_data(file_name="train.csv")
 
         brightness_list = []
         steatosis_status_list = []
@@ -324,12 +308,12 @@ class Predictor:
         for t in train_data:
             for i in range(len(whole_liver_brightness_data)):
                 if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
-                        full_img_brightness_data[i]['nii']:
+                        whole_study_brightness_data[i]['nii']:
                     row = []
                     for k in range(len(types_of_average)):
                         row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
                     for k in range(len(relative_types_of_average)):
-                        row.append(float(full_img_brightness_data[i][relative_types_of_average[k]]))
+                        row.append(float(whole_study_brightness_data[i][relative_types_of_average[k]]))
                     brightness_list.append(row)
                     steatosis_status_list.append(float(t['ground_truth']))
                     break
