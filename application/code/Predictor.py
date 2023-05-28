@@ -47,8 +47,16 @@ class Predictor:
                         brightness_of_sick_patients.append(float(bd[type_of_average]))
                     break
 
-        intersection_max_point = max(brightness_of_sick_patients)
-        intersection_min_point = min(brightness_of_healthy_patients)
+        if len(brightness_of_sick_patients) > 0:
+            intersection_max_point = max(brightness_of_sick_patients)
+        else:
+            intersection_max_point = float('-inf')
+
+        if len(brightness_of_healthy_patients) > 0:
+            intersection_min_point = min(brightness_of_healthy_patients)
+        else:
+            intersection_min_point = float('inf')
+
 
         healthy_in_intersection = []
         for brightness in brightness_of_healthy_patients:
