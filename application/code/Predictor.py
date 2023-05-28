@@ -40,12 +40,26 @@ class Predictor:
         brightness_of_healthy_patients = []
         for bd in whole_liver_brightness_data:
             for t in train:
-                if bd['nii'] == t['nii']:
-                    if float(t['ground_truth']) == 0.0:
-                        brightness_of_healthy_patients.append(float(bd[type_of_average]))
+                if 'nii' in bd.keys():
+                    if 'nii' in t.keys():
+                        if bd['nii'] == t['nii']:
+                            if type_of_average in bd.keys():
+                                content = bd[type_of_average]
+                                if content.replace('.', '', 1).isdigit():
+                                    value = float(content)
+                                else:
+                                    raise ValueError
+                            else:
+                                raise Exception(f"{type_of_average} type of average does not exist")
+                            if float(t['ground_truth']) == 0.0:
+                                brightness_of_healthy_patients.append(value)
+                            else:
+                                brightness_of_sick_patients.append(value)
+                            break
                     else:
-                        brightness_of_sick_patients.append(float(bd[type_of_average]))
-                    break
+                        raise Exception(f"Wrong keys in {t}")
+                else:
+                    raise Exception(f"Wrong keys in {bd}")
 
         if len(brightness_of_sick_patients) > 0:
             intersection_max_point = max(brightness_of_sick_patients)
@@ -57,16 +71,15 @@ class Predictor:
         else:
             intersection_min_point = float('inf')
 
-
         healthy_in_intersection = []
-        for brightness in brightness_of_healthy_patients:
-            if brightness < intersection_max_point and intersection_min_point < brightness:
-                healthy_in_intersection.append(brightness)
+        for brightness_list in brightness_of_healthy_patients:
+            if brightness_list < intersection_max_point and intersection_min_point < brightness_list:
+                healthy_in_intersection.append(brightness_list)
 
         sick_in_intersection = []
-        for brightness in brightness_of_sick_patients:
-            if brightness < intersection_max_point and intersection_min_point < brightness:
-                sick_in_intersection.append(brightness)
+        for brightness_list in brightness_of_sick_patients:
+            if brightness_list < intersection_max_point and intersection_min_point < brightness_list:
+                sick_in_intersection.append(brightness_list)
 
         # print("End finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -90,96 +103,169 @@ class Predictor:
         train = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
 
         # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness = []
+        brightness_list = []
         y = []
         for bd in whole_liver_brightness_data:
             for t in train:
-                if bd['nii'] == t['nii']:
-                    brightness.append(float(bd[type_of_average]))
-                    y.append(int(float(t['ground_truth'])))
+                if 'nii' in bd.keys():
+                    if 'nii' in t.keys():
+                        if bd['nii'] == t['nii']:
+                            if type_of_average in bd.keys():
+                                content = bd[type_of_average]
+                                if content.replace('.', '', 1).isdigit():
+                                    value = float(content)
+                                else:
+                                    raise ValueError
+                            else:
+                                raise Exception(f"{type_of_average} type of average does not exist")
 
-        max_point = max(brightness)
-        min_point = min(brightness)
-        border_point = (max_point + min_point) / 2
-
-        y_pred_init = []
-
-        for bd in whole_liver_brightness_data:
-            for t in train:
-                if bd['nii'] == t['nii']:
-                    if float(bd[type_of_average]) <= border_point:
-                        y_pred_init.append(1)
+                            brightness_list.append(value)
+                            y.append(int(float(t['ground_truth'])))
                     else:
-                        y_pred_init.append(0)
-                    break
+                        raise Exception(f"Wrong keys in {t}")
+                else:
+                    raise Exception(f"Wrong keys in {bd}")
 
-        score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
-        leftmost_best_score = 0.0
-        leftmost_point = border_point
-        step = 0.1
+        if len(brightness_list) > 0:
+            max_point = max(brightness_list)
+            min_point = min(brightness_list)
+            border_point = (max_point + min_point) / 2
 
-        while leftmost_best_score <= score:
+            y_pred_init = []
 
+            for bd in whole_liver_brightness_data:
+                for t in train:
+                    if 'nii' in bd.keys():
+                        if 'nii' in t.keys():
+                            if bd['nii'] == t['nii']:
+                                if type_of_average in bd.keys():
+                                    content = bd[type_of_average]
+                                    if content.replace('.', '', 1).isdigit():
+                                        value = float(content)
+                                    else:
+                                        raise ValueError
+                                else:
+                                    raise Exception(f"{type_of_average} type of average does not exist")
+                                if value <= border_point:
+                                    y_pred_init.append(1)
+                                else:
+                                    y_pred_init.append(0)
+                                break
+                        else:
+                            raise Exception(f"Wrong keys in {t}")
+                    else:
+                        raise Exception(f"Wrong keys in {bd}")
+
+            score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
             leftmost_best_score = score
-            point1 = leftmost_point - step
+            current_leftmost_score = score
+            leftmost_point = border_point
+            step = 0.1
 
-            y_pred1 = []
+            while current_leftmost_score >= score:
+                # print(f"leftmost_best_score={leftmost_best_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                # print(f"leftmost_point={leftmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                # print(f"score={score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                score = leftmost_best_score
+                current_leftmost_point = leftmost_point - step
 
-            for bd in whole_liver_brightness_data:
-                for t in train:
-                    if bd['nii'] == t['nii']:
-                        if float(bd[type_of_average]) <= point1:
-                            y_pred1.append(1)
+                y_pred_leftmost_point = []
+
+                for bd in whole_liver_brightness_data:
+                    for t in train:
+                        if 'nii' in bd.keys():
+                            if 'nii' in t.keys():
+                                if bd['nii'] == t['nii']:
+                                    if type_of_average in bd.keys():
+                                        content = bd[type_of_average]
+                                        if content.replace('.', '', 1).isdigit():
+                                            value = float(content)
+                                        else:
+                                            raise ValueError
+                                    else:
+                                        raise Exception(f"{type_of_average} type of average does not exist")
+                                    if value <= current_leftmost_point:
+                                        y_pred_leftmost_point.append(1)
+                                    else:
+                                        y_pred_leftmost_point.append(0)
+                                    break
+                            else:
+                                raise Exception(f"Wrong keys in {t}")
                         else:
-                            y_pred1.append(0)
+                            raise Exception(f"Wrong keys in {bd}")
 
-            score1 = math.fabs(sklearn.metrics.f1_score(y, y_pred1))
+                # print(f"y_pred_leftmost_point={y_pred_leftmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                current_leftmost_score = math.fabs(sklearn.metrics.f1_score(y, y_pred_leftmost_point))
+                # print(f"current_leftmost_score={current_leftmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-            if score1 >= score:
-                score = score1
-                leftmost_point = point1
-            else:
-                break
+                if current_leftmost_score >= score:
+                    leftmost_best_score = current_leftmost_score
+                    leftmost_point = current_leftmost_point
 
-        border_point = (max_point + min_point) / 2
-        score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
-        rightmost_best_score = 0.0
-        rightmost_point = border_point
-
-        while rightmost_best_score <= score:
-
+            border_point = (max_point + min_point) / 2
+            score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
             rightmost_best_score = score
-            point2 = rightmost_point + step
+            current_rightmost_score = score
+            rightmost_point = border_point
 
-            y_pred2 = []
+            while current_rightmost_score >= score:
+                # print(f"rightmost_best_score={rightmost_best_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                # print(f"rightmost_point={rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                # print(f"score={score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                score = rightmost_best_score
+                current_rightmost_point = rightmost_point + step
 
-            for bd in whole_liver_brightness_data:
-                for t in train:
-                    if bd['nii'] == t['nii']:
-                        if float(bd[type_of_average]) <= point2:
-                            y_pred2.append(1)
+                y_pred_rightmost_point = []
+
+                for bd in whole_liver_brightness_data:
+                    for t in train:
+                        if 'nii' in bd.keys():
+                            if 'nii' in t.keys():
+                                if bd['nii'] == t['nii']:
+                                    if type_of_average in bd.keys():
+                                        content = bd[type_of_average]
+                                        if content.replace('.', '', 1).isdigit():
+                                            value = float(content)
+                                        else:
+                                            raise ValueError
+                                    else:
+                                        raise Exception(f"{type_of_average} type of average does not exist")
+                                    if value <= current_rightmost_point:
+                                        y_pred_rightmost_point.append(1)
+                                    else:
+                                        y_pred_rightmost_point.append(0)
+                                    break
+                            else:
+                                raise Exception(f"Wrong keys in {t}")
                         else:
-                            y_pred2.append(0)
+                            raise Exception(f"Wrong keys in {bd}")
 
-            score2 = math.fabs(sklearn.metrics.f1_score(y, y_pred2))
+                # print(f"y_pred_rightmost_point={y_pred_rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                current_rightmost_score = math.fabs(sklearn.metrics.f1_score(y, y_pred_rightmost_point))
+                # print(f"current_rightmost_score={current_rightmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-            if score2 >= score:
-                score = score2
-                rightmost_point = point2
+                if current_rightmost_score >= score:
+                    rightmost_best_score = current_rightmost_score
+                    rightmost_point = current_rightmost_point
+
+            # print(f"rightmost_point={rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+            # print(f"leftmost_point={leftmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+            if rightmost_best_score >= leftmost_best_score:
+                border_point = rightmost_point
             else:
-                break
+                border_point = leftmost_point
 
-        if rightmost_best_score >= leftmost_best_score:
-            border_point = rightmost_point
+            # print("End finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+            FileManager.save_data_for_most_powerful_criterion(border_point=border_point,
+                                                              type_of_average=type_of_average,
+                                                              config_folder_path=config_folder_path)
+
+            return border_point
+            # print("End most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         else:
-            border_point = leftmost_point
-
-        # print("End finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        FileManager.save_data_for_most_powerful_criterion(border_point=border_point, type_of_average=type_of_average,
-                                                          config_folder_path=config_folder_path)
-
-        # print("End most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+            raise Exception("Brightness list is empty")
 
     @staticmethod
     def most_powerful_criterion(value_of_brightness, type_of_average):
