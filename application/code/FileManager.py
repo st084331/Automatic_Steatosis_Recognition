@@ -3,11 +3,14 @@ import json
 import os
 from datetime import datetime
 
+from application.code.Init import DATA_FOLDER_PATH, CONFIG_FOLDER_PATH, PARENT_FOLDER_PATH
+from application.code.Predictor import Predictor
+
 
 class FileManager:
 
     @staticmethod
-    def load_brightness_data(data_folder_path, file_name):
+    def load_brightness_data(file_name, data_folder_path=DATA_FOLDER_PATH):
         # print("Start load_brightness_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_path = os.path.join(data_folder_path, file_name)
 
@@ -27,7 +30,7 @@ class FileManager:
             raise FileExistsError
 
     @staticmethod
-    def load_data_for_fuzzy_criterion(type_of_average, config_folder_path):
+    def load_data_for_fuzzy_criterion(type_of_average, config_folder_path=CONFIG_FOLDER_PATH):
 
         # print("Start load_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         fuzzy_criterion_train_sick_in_intersection_path = os.path.join(config_folder_path,
@@ -54,7 +57,7 @@ class FileManager:
         return [sick_intersection, healthy_intersection]
 
     @staticmethod
-    def load_data_for_most_powerful_criterion(type_of_average, config_folder_path):
+    def load_data_for_most_powerful_criterion(type_of_average, config_folder_path=CONFIG_FOLDER_PATH):
 
         # print("Start load_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         most_powerful_criterion_train_path = os.path.join(config_folder_path,
@@ -74,7 +77,7 @@ class FileManager:
 
     @staticmethod
     def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average,
-                                      config_folder_path):
+                                      config_folder_path=CONFIG_FOLDER_PATH):
 
         # print("Start save_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         sick_in_intersection_path = os.path.join(config_folder_path,
@@ -98,7 +101,7 @@ class FileManager:
         return [sick_in_intersection_path, healthy_in_intersection_path]
 
     @staticmethod
-    def save_data_for_most_powerful_criterion(border_point, type_of_average, config_folder_path):
+    def save_data_for_most_powerful_criterion(border_point, type_of_average, config_folder_path=CONFIG_FOLDER_PATH):
 
         # print("Start save_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -118,7 +121,7 @@ class FileManager:
         return border_point_path
 
     @staticmethod
-    def delete_residual_files(substr, folder_path):
+    def delete_residual_files(substr, folder_path=PARENT_FOLDER_PATH):
         # print("Start delete_residual_files |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if os.path.exists(folder_path):
             folder = os.listdir(folder_path)
@@ -153,3 +156,29 @@ class FileManager:
                 return 0
         else:
             raise Exception("Folder does not exist")
+
+    @staticmethod
+    def make_config(averages, data_folder_path=DATA_FOLDER_PATH, config_folder_path=CONFIG_FOLDER_PATH):
+        # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
+                                                                       file_name="whole_liver.csv")
+
+        train_data = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
+
+        for type in averages:
+            border_point = Predictor.most_powerful_criterion_train(type_of_average=type, train_data=train_data,
+                                                                   whole_liver_brightness_data=whole_liver_brightness_data)
+
+            FileManager.save_data_for_most_powerful_criterion(border_point=border_point,
+                                                              type_of_average=type,
+                                                              config_folder_path=config_folder_path)
+
+            intersection = Predictor.fuzzy_criterion_train(type_of_average=type, train_data=train_data,
+                                                           whole_liver_brightness_data=whole_liver_brightness_data)
+
+            FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=intersection[0],
+                                                      healthy_in_intersection=intersection[1],
+                                                      type_of_average=type,
+                                                      config_folder_path=config_folder_path)
+
+        # print("End make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])

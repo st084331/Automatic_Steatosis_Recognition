@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QComboBox, QLabel, QVBoxLayout, QLineEdit, 
 from application.code.CT_Handler import CT_Handler
 from application.code.CheckableComboBox import CheckableComboBox
 from application.code.FileManager import FileManager
-from application.code.Init import AVERAGES, AREAS, METHODS, PARENT_FOLDER_PATH
+from application.code.Init import AVERAGES, AREAS, METHODS
 from application.code.RequestHandler import RequestHandler
 
 
@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
 
                     result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method) * 100}%"
 
-                    FileManager.delete_residual_files(".nii", folder_path=PARENT_FOLDER_PATH)
+                    FileManager.delete_residual_files(".nii")
                 elif FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == -1:
                     result = "The folder contains not only dicom files"
                 else:

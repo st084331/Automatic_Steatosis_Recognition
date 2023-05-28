@@ -6,37 +6,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
 from application.code.FileManager import FileManager
-from application.code.FormatConverter import FormatConverter
-from application.code.Init import AVERAGES, DATA_FOLDER_PATH, CONFIG_FOLDER_PATH
+from application.code.Init import DATA_FOLDER_PATH, CONFIG_FOLDER_PATH
 
 
 class Predictor:
-
-    @staticmethod
-    def make_config(averages, data_folder_path=DATA_FOLDER_PATH, config_folder_path=CONFIG_FOLDER_PATH):
-        # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
-                                                                       file_name="whole_liver.csv")
-
-        train_data = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
-
-        for type in averages:
-            border_point = Predictor.most_powerful_criterion_train(type_of_average=type, train_data=train_data,
-                                                                   whole_liver_brightness_data=whole_liver_brightness_data)
-
-            FileManager.save_data_for_most_powerful_criterion(border_point=border_point,
-                                                              type_of_average=type,
-                                                              config_folder_path=config_folder_path)
-
-            intersection = Predictor.fuzzy_criterion_train(type_of_average=type, train_data=train_data,
-                                                           whole_liver_brightness_data=whole_liver_brightness_data)
-
-            FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=intersection[0],
-                                                      healthy_in_intersection=intersection[1],
-                                                      type_of_average=type,
-                                                      config_folder_path=config_folder_path)
-
-        # print("End make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
     def fuzzy_criterion_train(type_of_average, whole_liver_brightness_data, train_data):
@@ -51,7 +24,7 @@ class Predictor:
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
                             if type_of_average in bd.keys():
-                                content = bd[type_of_average]
+                                content = str(bd[type_of_average])
                                 if content.replace('.', '', 1).isdigit():
                                     value = float(content)
                                 else:
@@ -105,7 +78,7 @@ class Predictor:
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
                             if type_of_average in bd.keys():
-                                content = bd[type_of_average]
+                                content = str(bd[type_of_average])
                                 if content.replace('.', '', 1).isdigit():
                                     value = float(content)
                                 else:
@@ -133,7 +106,7 @@ class Predictor:
                         if 'nii' in t.keys():
                             if bd['nii'] == t['nii']:
                                 if type_of_average in bd.keys():
-                                    content = bd[type_of_average]
+                                    content = str(bd[type_of_average])
                                     if content.replace('.', '', 1).isdigit():
                                         value = float(content)
                                     else:
@@ -172,7 +145,7 @@ class Predictor:
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
                                     if type_of_average in bd.keys():
-                                        content = bd[type_of_average]
+                                        content = str(bd[type_of_average])
                                         if content.replace('.', '', 1).isdigit():
                                             value = float(content)
                                         else:
@@ -215,7 +188,7 @@ class Predictor:
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
                                     if type_of_average in bd.keys():
-                                        content = bd[type_of_average]
+                                        content = str(bd[type_of_average])
                                         if content.replace('.', '', 1).isdigit():
                                             value = float(content)
                                         else:
@@ -270,7 +243,7 @@ class Predictor:
         # print("Start fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(
-            type_of_average=type_of_average, config_folder_path=CONFIG_FOLDER_PATH)
+            type_of_average=type_of_average)
 
         intersection = []
         for elem in sick_intersection:
@@ -301,13 +274,11 @@ class Predictor:
 
         # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        full_img_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
-                                                                    file_name="full_img.csv")
+        full_img_brightness_data = FileManager.load_brightness_data(file_name="whole_study.csv")
 
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
-                                                                       file_name="whole_liver.csv")
+        whole_liver_brightness_data = FileManager.load_brightness_data(file_name="whole_liver.csv")
 
-        train_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
+        train_data = FileManager.load_brightness_data(file_name="train.csv")
 
         brightness_list = []
         steatosis_status_list = []
@@ -341,13 +312,11 @@ class Predictor:
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        full_img_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
-                                                                    file_name="full_img.csv")
+        full_img_brightness_data = FileManager.load_brightness_data(file_name="whole_study.csv")
 
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
-                                                                       file_name="whole_liver.csv")
+        whole_liver_brightness_data = FileManager.load_brightness_data(file_name="whole_liver.csv")
 
-        train_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
+        train_data = FileManager.load_brightness_data(file_name="train.csv")
 
         brightness_list = []
         steatosis_status_list = []
