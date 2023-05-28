@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
                 # print(f"{folder} exists |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
                 substr = ".dcm"
-                if FileManager.check_dcm_in_folder(folder_path=folder, substr=substr):
+                if FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == 1:
                     # print(f"FileManager.check_dcm_in_folder(folder={folder}, substr={substr}) is True", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
                     folder_struct = os.path.split(folder)
@@ -169,8 +169,10 @@ class MainWindow(QMainWindow):
                     result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method) * 100}%"
 
                     FileManager.delete_residual_files(".nii", folder_path=PARENT_FOLDER_PATH)
+                elif FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == -1:
+                    result = "The folder contains not only dicom files"
                 else:
-                    result = "This is not Dicom folder"
+                    result = "This folder is empty"
 
             else:
                 result = "Wrong path"
