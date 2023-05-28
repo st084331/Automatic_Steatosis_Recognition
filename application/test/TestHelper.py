@@ -2,6 +2,12 @@ import csv
 import json
 import os
 
+TYPES = ["median", "mode", "mean", "1", "3", "median_low", "median_high", "median_grouped"]
+CURRENT_FOLDER_PATH = os.getcwd()
+PARENT_FOLDER_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER_PATH, os.pardir))
+CONFIG_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, "test", "additional_files")
+DATA_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, "test", "additional_files")
+
 
 class TestHelper:
 
