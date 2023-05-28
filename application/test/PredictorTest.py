@@ -117,6 +117,32 @@ class PredictorTest(unittest.TestCase):
                                                      whole_liver_brightness_data=whole_liver_brightness_data,
                                                      train_data=train_data)
 
+    def test_fuzzy_criterion_train_train_wrong_type_of_ground_truth(self):
+        whole_liver_brightness_data = [{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0},
+                                       {"nii": "c", "value": 4.0}, {"nii": "d", "value": 3.5},
+                                       {"nii": "e", "value": 3.4}]
+
+        train_data = [{"nii": "a", "ground_truth": "a"}, {"nii": "b", "ground_truth": 0.0},
+                      {"nii": "c", "ground_truth": 1.0}, {"nii": "d", "ground_truth": 0.0},
+                      {"nii": "e", "ground_truth": 1.0}]
+
+        with self.assertRaises(Exception):
+            Predictor.fuzzy_criterion_train(type_of_average="value",
+                                            whole_liver_brightness_data=whole_liver_brightness_data,
+                                            train_data=train_data)
+
+    def test_fuzzy_criterion_train_wrong_nii_key_in_train_file(self):
+        whole_liver_brightness_data = [{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0},
+                                       {"nii": "c", "value": 4.0}, {"nii": "d", "value": 3.5},
+                                       {"nii": "e", "value": 3.4}]
+
+        train_data = [{"not_nii": "a", "ground_truth": 1.0}]
+
+        with self.assertRaises(Exception):
+            Predictor.fuzzy_criterion_train(type_of_average="value",
+                                            whole_liver_brightness_data=whole_liver_brightness_data,
+                                            train_data=train_data)
+
     def test_most_powerful_criterion_train(self):
         whole_liver_brightness_data = [{"nii": "a", "value": 1.0}, {"nii": "b", "value": 2.0},
                                        {"nii": "c", "value": 3.0}, {"nii": "d", "value": 4.0},
@@ -144,12 +170,24 @@ class PredictorTest(unittest.TestCase):
                                                     whole_liver_brightness_data=whole_liver_brightness_data,
                                                     train_data=train_data)
 
-    def test_most_powerful_criterion_train_wrong_keys_in_train_file(self):
+    def test_most_powerful_criterion_train_wrong_nii_key_in_train_file(self):
         whole_liver_brightness_data = [{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0},
                                        {"nii": "c", "value": 4.0}, {"nii": "d", "value": 3.5},
                                        {"nii": "e", "value": 3.4}]
 
         train_data = [{"not_nii": "a", "ground_truth": 1.0}]
+
+        with self.assertRaises(Exception):
+            Predictor.most_powerful_criterion_train(type_of_average="value",
+                                                    whole_liver_brightness_data=whole_liver_brightness_data,
+                                                    train_data=train_data)
+
+    def test_most_powerful_criterion_train_wrong_ground_truth_key_in_train_file(self):
+        whole_liver_brightness_data = [{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0},
+                                       {"nii": "c", "value": 4.0}, {"nii": "d", "value": 3.5},
+                                       {"nii": "e", "value": 3.4}]
+
+        train_data = [{"nii": "a", "not_ground_truth": 1.0}]
 
         with self.assertRaises(Exception):
             Predictor.most_powerful_criterion_train(type_of_average="value",
@@ -167,6 +205,20 @@ class PredictorTest(unittest.TestCase):
 
         with self.assertRaises(Exception):
             Predictor.most_powerful_criterion_train(type_of_average="not_value",
+                                                    whole_liver_brightness_data=whole_liver_brightness_data,
+                                                    train_data=train_data)
+
+    def test_most_powerful_criterion_train_wrong_type_of_ground_truth(self):
+        whole_liver_brightness_data = [{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0},
+                                       {"nii": "c", "value": 4.0}, {"nii": "d", "value": 3.5},
+                                       {"nii": "e", "value": 3.4}]
+
+        train_data = [{"nii": "a", "ground_truth": "a"}, {"nii": "b", "ground_truth": 0.0},
+                      {"nii": "c", "ground_truth": 1.0}, {"nii": "d", "ground_truth": 0.0},
+                      {"nii": "e", "ground_truth": 1.0}]
+
+        with self.assertRaises(Exception):
+            Predictor.most_powerful_criterion_train(type_of_average="value",
                                                     whole_liver_brightness_data=whole_liver_brightness_data,
                                                     train_data=train_data)
 
@@ -214,7 +266,7 @@ class PredictorTest(unittest.TestCase):
 
     def test_fuzzy_criterion(self):
         self.assertEqual(0.25, Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
-                                        healthy_intersection=[3.0, 3.5]))
+                                                         healthy_intersection=[3.0, 3.5]))
 
 
 if __name__ == '__main__':
