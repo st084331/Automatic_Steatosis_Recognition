@@ -296,6 +296,33 @@ class PredictorTest(unittest.TestCase):
         for p in paths1:
             os.remove(p)
 
+    def test_make_config(self):
+        paths1 = TestHelper.make_csv_file(path=CONFIG_FOLDER_PATH, file="whole_liver",
+                                          data=[{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0},
+                                                {"nii": "c", "value": 4.0}, {"nii": "d", "value": 3.5},
+                                                {"nii": "e", "value": 3.4}])
 
-if __name__ == '__main__':
-    unittest.main()
+        paths2 = TestHelper.make_csv_file(path=CONFIG_FOLDER_PATH, file="train",
+                                          data=[{"nii": "a", "ground_truth": 1.0}, {"nii": "b", "ground_truth": 0.0},
+                                                {"nii": "c", "ground_truth": 1.0}, {"nii": "d", "ground_truth": 0.0},
+                                                {"nii": "e", "ground_truth": 1.0}])
+
+        Predictor.make_config(data_folder_path=DATA_FOLDER_PATH, config_folder_path=CONFIG_FOLDER_PATH,
+                              averages=['value'])
+
+        self.assertTrue(os.path.exists(os.path.join(CONFIG_FOLDER_PATH, 'most_powerful_criterion_train_value.txt')))
+        self.assertTrue(
+            os.path.exists(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_sick_in_intersection_value.json')))
+        self.assertTrue(os.path.exists(
+            os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_healthy_in_intersection_value.json')))
+
+        for p in paths2:
+            os.remove(p)
+        for p in paths1:
+            os.remove(p)
+        os.remove(os.path.join(CONFIG_FOLDER_PATH, 'most_powerful_criterion_train_value.txt'))
+        os.remove(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_healthy_in_intersection_value.json'))
+        os.remove(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_sick_in_intersection_value.json'))
+
+        if __name__ == '__main__':
+            unittest.main()
