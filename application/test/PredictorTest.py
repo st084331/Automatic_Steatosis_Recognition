@@ -31,6 +31,25 @@ class PredictorTest(unittest.TestCase):
         os.remove(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_sick_in_intersection_value.json'))
         os.remove(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_healthy_in_intersection_value.json'))
 
+    def test_fuzzy_criterion_train_empty_intersection(self):
+        paths1 = TestHelper.make_csv_file(path=CONFIG_FOLDER_PATH, file="whole_liver",
+                                          data=[{"nii": "a", "value": 1.0}, {"nii": "b", "value": 3.0}])
+
+        paths2 = TestHelper.make_csv_file(path=CONFIG_FOLDER_PATH, file="train",
+                                          data=[{"nii": "a", "ground_truth": 1.0}, {"nii": "b", "ground_truth": 0.0}])
+
+        result = Predictor.fuzzy_criterion_train(type_of_average="value", data_folder_path=DATA_FOLDER_PATH,
+                                                 config_folder_path=CONFIG_FOLDER_PATH)
+
+        self.assertEqual([[], []], result)
+
+        for p in paths2:
+            os.remove(p)
+        for p in paths1:
+            os.remove(p)
+        os.remove(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_sick_in_intersection_value.json'))
+        os.remove(os.path.join(CONFIG_FOLDER_PATH, 'fuzzy_criterion_train_healthy_in_intersection_value.json'))
+
 
 if __name__ == '__main__':
     unittest.main()
