@@ -49,14 +49,24 @@ class Predictor:
             intersection_min_point = float('inf')
 
         healthy_in_intersection = []
-        for brightness_list in brightness_of_healthy_patients:
-            if intersection_max_point >= brightness_list >= intersection_min_point:
-                healthy_in_intersection.append(brightness_list)
+        if intersection_max_point != float('-inf'):
+            for brightness_list in brightness_of_healthy_patients:
+                if intersection_max_point >= brightness_list >= intersection_min_point:
+                    healthy_in_intersection.append(brightness_list)
+        else:
+            for brightness_list in brightness_of_healthy_patients:
+                if brightness_list >= intersection_min_point:
+                    healthy_in_intersection.append(brightness_list)
 
         sick_in_intersection = []
-        for brightness_list in brightness_of_sick_patients:
-            if intersection_max_point >= brightness_list >= intersection_min_point:
-                sick_in_intersection.append(brightness_list)
+        if intersection_min_point != float('inf'):
+            for brightness_list in brightness_of_sick_patients:
+                if intersection_max_point >= brightness_list >= intersection_min_point:
+                    sick_in_intersection.append(brightness_list)
+        else:
+            for brightness_list in brightness_of_sick_patients:
+                if intersection_max_point >= brightness_list:
+                    sick_in_intersection.append(brightness_list)
 
         # print("End finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -247,15 +257,18 @@ class Predictor:
             if not str(elem).replace(".", "", 1).isdigit():
                 raise ValueError
 
+        if len(sick_intersection) > 0 and len(healthy_intersection) > 0:
+            raise Exception("Impossible to predict")
+
         if len(sick_intersection) > 0:
             intersection_max_point = max(sick_intersection)
         else:
-            raise Exception("Impossible to predict, because sick_intersection is empty")
+            intersection_max_point = float("-inf")
 
         if len(healthy_intersection) > 0:
             intersection_min_point = min(healthy_intersection)
         else:
-            raise Exception("Impossible to predict, because healthy_intersection is empty")
+            intersection_min_point = float("inf")
 
         if value_of_brightness > intersection_max_point:
             prediction = 0.0
