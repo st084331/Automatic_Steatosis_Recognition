@@ -15,31 +15,38 @@ class Predictor:
     @staticmethod
     def make_config(averages, data_folder_path=DATA_FOLDER_PATH, config_folder_path=CONFIG_FOLDER_PATH):
         # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
+                                                                       file_name="whole_liver.csv")
+
+        train_data = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
 
         for type in averages:
-            Predictor.most_powerful_criterion_train(type_of_average=type, config_folder_path=config_folder_path,
-                                                    data_folder_path=data_folder_path)
+            border_point = Predictor.most_powerful_criterion_train(type_of_average=type, train_data=train_data,
+                                                                   whole_liver_brightness_data=whole_liver_brightness_data)
 
-            Predictor.fuzzy_criterion_train(type_of_average=type, config_folder_path=config_folder_path,
-                                            data_folder_path=data_folder_path)
+            FileManager.save_data_for_most_powerful_criterion(border_point=border_point,
+                                                              type_of_average=type,
+                                                              config_folder_path=config_folder_path)
+
+            intersection = Predictor.fuzzy_criterion_train(type_of_average=type, train_data=train_data,
+                                                           whole_liver_brightness_data=whole_liver_brightness_data)
+
+            FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=intersection[0],
+                                                      healthy_in_intersection=intersection[1],
+                                                      type_of_average=type,
+                                                      config_folder_path=config_folder_path)
 
         # print("End make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
-    def fuzzy_criterion_train(type_of_average, data_folder_path=DATA_FOLDER_PATH,
-                              config_folder_path=CONFIG_FOLDER_PATH):
+    def fuzzy_criterion_train(type_of_average, whole_liver_brightness_data, train_data):
         # print("Start fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
-                                                                       file_name="whole_liver.csv")
-
-        train = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
 
         # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_of_sick_patients = []
         brightness_of_healthy_patients = []
         for bd in whole_liver_brightness_data:
-            for t in train:
+            for t in train_data:
                 if 'nii' in bd.keys():
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
@@ -83,30 +90,17 @@ class Predictor:
 
         # print("End finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=sick_in_intersection,
-                                                  healthy_in_intersection=healthy_in_intersection,
-                                                  type_of_average=type_of_average,
-                                                  config_folder_path=config_folder_path)
-
         return [sick_in_intersection, healthy_in_intersection]
 
-        # print("End fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
     @staticmethod
-    def most_powerful_criterion_train(type_of_average, data_folder_path=DATA_FOLDER_PATH,
-                                      config_folder_path=CONFIG_FOLDER_PATH):
+    def most_powerful_criterion_train(type_of_average, whole_liver_brightness_data, train_data):
         # print("Start most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
-                                                                       file_name="whole_liver.csv")
-
-        train = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
 
         # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_list = []
-        y = []
+        steatosis_status_list = []
         for bd in whole_liver_brightness_data:
-            for t in train:
+            for t in train_data:
                 if 'nii' in bd.keys():
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
@@ -120,7 +114,7 @@ class Predictor:
                                 raise Exception(f"{type_of_average} type of average does not exist")
 
                             brightness_list.append(value)
-                            y.append(int(float(t['ground_truth'])))
+                            steatosis_status_list.append(int(float(t['ground_truth'])))
                     else:
                         raise Exception(f"Wrong keys in {t}")
                 else:
@@ -131,10 +125,10 @@ class Predictor:
             min_point = min(brightness_list)
             border_point = (max_point + min_point) / 2
 
-            y_pred_init = []
+            pred_steatosis_status_list_init = []
 
             for bd in whole_liver_brightness_data:
-                for t in train:
+                for t in train_data:
                     if 'nii' in bd.keys():
                         if 'nii' in t.keys():
                             if bd['nii'] == t['nii']:
@@ -147,16 +141,16 @@ class Predictor:
                                 else:
                                     raise Exception(f"{type_of_average} type of average does not exist")
                                 if value <= border_point:
-                                    y_pred_init.append(1)
+                                    pred_steatosis_status_list_init.append(1)
                                 else:
-                                    y_pred_init.append(0)
+                                    pred_steatosis_status_list_init.append(0)
                                 break
                         else:
                             raise Exception(f"Wrong keys in {t}")
                     else:
                         raise Exception(f"Wrong keys in {bd}")
 
-            score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
+            score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_init))
             leftmost_best_score = score
             leftmost_point = border_point
             current_leftmost_score = score
@@ -170,10 +164,10 @@ class Predictor:
                 score = current_leftmost_score
                 current_leftmost_point = leftmost_point - step
 
-                y_pred_leftmost_point = []
+                pred_steatosis_status_list_leftmost = []
 
                 for bd in whole_liver_brightness_data:
-                    for t in train:
+                    for t in train_data:
                         if 'nii' in bd.keys():
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
@@ -186,21 +180,21 @@ class Predictor:
                                     else:
                                         raise Exception(f"{type_of_average} type of average does not exist")
                                     if value <= current_leftmost_point:
-                                        y_pred_leftmost_point.append(1)
+                                        pred_steatosis_status_list_leftmost.append(1)
                                     else:
-                                        y_pred_leftmost_point.append(0)
+                                        pred_steatosis_status_list_leftmost.append(0)
                                     break
                             else:
                                 raise Exception(f"Wrong keys in {t}")
                         else:
                             raise Exception(f"Wrong keys in {bd}")
 
-                # print(f"y_pred_leftmost_point={y_pred_leftmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                current_leftmost_score = math.fabs(sklearn.metrics.f1_score(y, y_pred_leftmost_point))
+                # print(f"pred_steatosis_status_list_leftmost={pred_steatosis_status_list_leftmost}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                current_leftmost_score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_leftmost))
                 # print(f"current_leftmost_score={current_leftmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
             border_point = (max_point + min_point) / 2
-            score = math.fabs(sklearn.metrics.f1_score(y, y_pred_init))
+            score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_init))
             rightmost_best_score = score
             rightmost_point = border_point
             current_rightmost_score = score
@@ -213,10 +207,10 @@ class Predictor:
                 score = current_rightmost_score
                 current_rightmost_point = rightmost_point + step
 
-                y_pred_rightmost_point = []
+                pred_steatosis_status_list_rightmost = []
 
                 for bd in whole_liver_brightness_data:
-                    for t in train:
+                    for t in train_data:
                         if 'nii' in bd.keys():
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
@@ -229,17 +223,17 @@ class Predictor:
                                     else:
                                         raise Exception(f"{type_of_average} type of average does not exist")
                                     if value <= current_rightmost_point:
-                                        y_pred_rightmost_point.append(1)
+                                        pred_steatosis_status_list_rightmost.append(1)
                                     else:
-                                        y_pred_rightmost_point.append(0)
+                                        pred_steatosis_status_list_rightmost.append(0)
                                     break
                             else:
                                 raise Exception(f"Wrong keys in {t}")
                         else:
                             raise Exception(f"Wrong keys in {bd}")
 
-                # print(f"y_pred_rightmost_point={y_pred_rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                current_rightmost_score = math.fabs(sklearn.metrics.f1_score(y, y_pred_rightmost_point))
+                # print(f"pred_steatosis_status_list_rightmost={pred_steatosis_status_list_rightmost}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+                current_rightmost_score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_rightmost))
                 # print(f"current_rightmost_score={current_rightmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
             # print(f"rightmost_point={rightmost_point}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -251,10 +245,6 @@ class Predictor:
                 border_point = leftmost_point
 
             # print("End finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-            FileManager.save_data_for_most_powerful_criterion(border_point=border_point,
-                                                              type_of_average=type_of_average,
-                                                              config_folder_path=config_folder_path)
 
             return border_point
             # print("End most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -317,12 +307,12 @@ class Predictor:
         whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
                                                                        file_name="whole_liver.csv")
 
-        train = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
+        train_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
 
-        X = []
-        y = []
+        brightness_list = []
+        steatosis_status_list = []
         # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        for t in train:
+        for t in train_data:
             for i in range(len(whole_liver_brightness_data)):
                 if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
                         full_img_brightness_data[i]['nii']:
@@ -331,12 +321,12 @@ class Predictor:
                         row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
                     for k in range(len(relative_types_of_average)):
                         row.append(float(full_img_brightness_data[i][relative_types_of_average[k]]))
-                    X.append(row)
-                    y.append(float(t['ground_truth']))
+                    brightness_list.append(row)
+                    steatosis_status_list.append(float(t['ground_truth']))
                     break
 
         reg = LinearRegression()
-        reg.fit(X, y)
+        reg.fit(brightness_list, steatosis_status_list)
 
         # print("End training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -357,12 +347,12 @@ class Predictor:
         whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH,
                                                                        file_name="whole_liver.csv")
 
-        train = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
+        train_data = FileManager.load_brightness_data(data_folder_path=DATA_FOLDER_PATH, file_name="train.csv")
 
-        X = []
-        y = []
+        brightness_list = []
+        steatosis_status_list = []
         # print("Start training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        for t in train:
+        for t in train_data:
             for i in range(len(whole_liver_brightness_data)):
                 if t['nii'] == whole_liver_brightness_data[i]['nii'] and t['nii'] == \
                         full_img_brightness_data[i]['nii']:
@@ -371,15 +361,15 @@ class Predictor:
                         row.append(float(whole_liver_brightness_data[i][types_of_average[k]]))
                     for k in range(len(relative_types_of_average)):
                         row.append(float(full_img_brightness_data[i][relative_types_of_average[k]]))
-                    X.append(row)
-                    y.append(float(t['ground_truth']))
+                    brightness_list.append(row)
+                    steatosis_status_list.append(float(t['ground_truth']))
                     break
 
         poly_model = PolynomialFeatures(degree=degree)
-        poly_x_values = poly_model.fit_transform(X)
-        poly_model.fit(poly_x_values, y)
+        poly_x_values = poly_model.fit_transform(brightness_list)
+        poly_model.fit(poly_x_values, steatosis_status_list)
         regression_model = LinearRegression()
-        regression_model.fit(poly_x_values, y)
+        regression_model.fit(poly_x_values, steatosis_status_list)
         # print("End training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         poly_x = poly_model.fit_transform([values_of_brightness])
