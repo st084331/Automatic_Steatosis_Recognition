@@ -212,7 +212,7 @@ class PredictorTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             Predictor.most_powerful_criterion(value_of_brightness=1.0, boarder_point="b")
 
-    def test_fuzzy_criterion_train_empty_healthy_intersection(self):
+    def test_fuzzy_criterion(self):
         self.assertEqual(0.25, Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
                                         healthy_intersection=[3.0, 3.5]))
 
