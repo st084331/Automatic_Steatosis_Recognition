@@ -30,4 +30,4 @@ class FormatConverter:
             current_types.append(current_type)
 
         # print(f"End types_of_average_to_current_types: {current_types} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        return current_types
+        return current_types.sort()
