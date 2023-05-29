@@ -17,6 +17,14 @@ class CT_Handler:
                  cpu: bool = CPU,
                  verbose: bool = VERBOSE, vessels: bool = VESSELS):
 
+        if not os.path.exists(folder_path):
+            raise Exception("folder_path does not exist")
+        if not os.path.exists(mask_output_folder_path):
+            raise Exception("mask_output_folder_path does not exist")
+        if not os.path.exists(dicom_to_nifti_output_folder_path):
+            raise Exception("dicom_to_nifti_output_folder_path does not exist")
+        if len(name_of_nifti_wo_extension) < 1:
+            raise Exception("Impossible name of name_of_nifti_wo_extension")
         # print("Start CT_Handler __init__ |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         self.folder_path: str = folder_path
         self.name_of_nifti_wo_extension: str = name_of_nifti_wo_extension
@@ -44,7 +52,7 @@ class CT_Handler:
         output_folder_path_wo_extension: str = os.path.join(output_folder_path, self.name_of_nifti_wo_extension)
         input: str = os.path.join(input_folder_path, self.name_of_nifti)
         livermask.func(path=input, output=output_folder_path_wo_extension, cpu=cpu, verbose=verbose, vessels=vessels)
-        # print(f"make_mask saved as {output} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        # print(f"make_mask saved as {output_folder_path_wo_extension} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         return os.path.join(output_folder_path, self.mask_file_name)
 
     def get_whole_study_brightness_info(self) -> List[float]:
@@ -54,7 +62,6 @@ class CT_Handler:
         whole_study_data: List[List[List[float]]] = whole_study.get_fdata()
 
         whole_study_brightness = []
-
         # print("Start of collection whole_study_brightness |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         for z in range(0, whole_study_data.shape[0], 2):
             for y in range(0, whole_study_data.shape[1], 2):
@@ -77,9 +84,9 @@ class CT_Handler:
         # print("Start of collection whole_liver_list_of_brightness |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_list_of_brightness = []
 
-        for z in range(0, mask_data.shape[0], 4):
-            for y in range(0, mask_data.shape[1], 4):
-                for x in range(0, mask_data.shape[2], 4):
+        for z in range(0, mask_data.shape[0], 2):
+            for y in range(0, mask_data.shape[1], 2):
+                for x in range(0, mask_data.shape[2], 2):
                     if mask_data[z][y][x] == 1:
                         whole_liver_list_of_brightness.append(whole_study_data[z][y][x])
         # print("End of collection whole_liver_list_of_brightness |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
