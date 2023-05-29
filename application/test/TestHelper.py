@@ -8,7 +8,7 @@ PARENT_FOLDER_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER_PATH, os.pardir
 CONFIG_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, "test", "additional_files")
 DATA_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, "test", "additional_files")
 TEST_STUDY_NAME = "1.2.826.0.1.3680043.8.498.13402560764035164755255899587734776159"
-TEST_STUDY_PATH = os.path.join(DATA_FOLDER_PATH, STUDY_NAME)
+TEST_STUDY_PATH = os.path.join(DATA_FOLDER_PATH, TEST_STUDY_NAME)
 
 
 class TestHelper:
