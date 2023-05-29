@@ -270,7 +270,6 @@ class PredictorTest(unittest.TestCase):
             Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, "b"],
                                       healthy_intersection=[3.0, 3.5])
 
-
     def test_fuzzy_criterion_empty_healthy_intersection(self):
         result = Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
                                            healthy_intersection=[])
@@ -390,7 +389,7 @@ class PredictorTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             Predictor.regression_data_maker(
                 whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
-                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                train_data=[{"nii": "a", "ground_truth": "b"}],
                 whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
                 types_of_average=["value1"], relative_types_of_average=["value2"])
 
@@ -430,34 +429,89 @@ class PredictorTest(unittest.TestCase):
         self.assertEqual([[1.0]], brightness_list)
         self.assertEqual([1.0], steatosis_status_list)
 
-    def test_linear_regression(self):
+    def test_polynomial_regression(self):
         brightness_list = [[1.0, 1.0], [0.0, 0.0]]
         steatosis_status_list = [1.0, 0.0]
         values_of_brightness = [0.5, 0.5]
+        degree = 1
 
-        result = Predictor.linear_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
-                                             steatosis_status_list=steatosis_status_list)
+        result = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
+                                                 brightness_list=brightness_list,
+                                                 steatosis_status_list=steatosis_status_list, degree=degree)
 
         self.assertEqual(result, 0.5)
 
-    def test_linear_regression_empty_steatosis_status_list(self):
+    def test_polynomial_regression_empty_values_of_brightness(self):
+        brightness_list = [[1.0, 1.0], [0.0, 0.0]]
+        steatosis_status_list = [1.0, 0.0]
+        values_of_brightness = []
+        degree = 1
+
+        with self.assertRaises(Exception):
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
+                                                 brightness_list=brightness_list,
+                                                 steatosis_status_list=steatosis_status_list, degree=degree)
+
+    def test_polynomial_regression_empty_steatosis_status_list(self):
         brightness_list = [[1.0, 1.0], [0.0, 0.0]]
         steatosis_status_list = []
         values_of_brightness = [0.5, 0.5]
+        degree = 1
 
         with self.assertRaises(Exception):
-            Predictor.linear_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
-                                        steatosis_status_list=steatosis_status_list)
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                            steatosis_status_list=steatosis_status_list, degree=degree)
 
-    def test_linear_regression_empty_brightness_list(self):
+    def test_polynomial_regression_empty_brightness_list(self):
         brightness_list = []
         steatosis_status_list = [1.0, 0.0]
         values_of_brightness = [0.5, 0.5]
+        degree = 1
 
         with self.assertRaises(Exception):
-            Predictor.linear_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
-                                        steatosis_status_list=steatosis_status_list)
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                            steatosis_status_list=steatosis_status_list, degree=degree)
 
+    def test_polynomial_regression_empty_element_in_brightness_list(self):
+        brightness_list = [[1.0, 1.0], []]
+        steatosis_status_list = [1.0, 0.0]
+        values_of_brightness = [0.5, 0.5]
+        degree = 1
+
+        with self.assertRaises(Exception):
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                            steatosis_status_list=steatosis_status_list, degree=degree)
+
+    def test_polynomial_regression_diffrent_number_of_arguments_for_brightness_list_elem_and_values_of_brightness(self):
+        brightness_list = [[1.0, 1.0], [0.0, 0.0]]
+        steatosis_status_list = [1.0, 0.0]
+        values_of_brightness = [0.5]
+        degree = 1
+
+        with self.assertRaises(Exception):
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                            steatosis_status_list=steatosis_status_list, degree=degree)
+
+    def test_polynomial_regression_brightness_list_len_not_equal_steatosis_status_list_len(self):
+        brightness_list = [[1.0, 1.0], [0.0, 0.0]]
+        steatosis_status_list = [1.0, 0.0, 3.0]
+        values_of_brightness = [0.5, 0.5]
+        degree = 1
+
+        with self.assertRaises(Exception):
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                            steatosis_status_list=steatosis_status_list, degree=degree)
+
+    def test_polynomial_regression_wrong_degree(self):
+        brightness_list = [[1.0, 1.0], [0.0, 0.0]]
+        steatosis_status_list = [1.0, 0.0]
+        values_of_brightness = [0.5, 0.5]
+        degree = 0
+
+        with self.assertRaises(Exception):
+            Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
+                                                 brightness_list=brightness_list,
+                                                 steatosis_status_list=steatosis_status_list, degree=degree)
 
 if __name__ == '__main__':
     unittest.main()
