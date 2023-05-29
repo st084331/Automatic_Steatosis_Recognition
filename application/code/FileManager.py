@@ -1,7 +1,7 @@
 import csv
 import json
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional, Union
 from datetime import datetime
 
 from application.code.Init import DATA_FOLDER_PATH, CONFIG_FOLDER_PATH, PARENT_FOLDER_PATH
@@ -11,7 +11,7 @@ from application.code.Predictor import Predictor
 class FileManager:
 
     @staticmethod
-    def load_brightness_data(file_name: str, data_folder_path: str = DATA_FOLDER_PATH) -> List[Dict[str, float]]:
+    def load_brightness_data(file_name: str, data_folder_path: str = DATA_FOLDER_PATH) -> List[Dict[str, Optional[Union[str, float]]]]:
 
         # print("Start load_brightness_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_path: str = os.path.join(data_folder_path, file_name)
@@ -67,9 +67,9 @@ class FileManager:
                                                                'most_powerful_criterion_train_' + type_of_average + '.txt')
         if os.path.exists(most_powerful_criterion_train_path):
             with open(most_powerful_criterion_train_path, "r") as f:
-                content = f.read()
+                content: str = f.read()
                 if content.replace('.', '', 1).isdigit():
-                    value = float(content)
+                    value: float = float(content)
                 else:
                     raise ValueError
             return value
@@ -164,21 +164,24 @@ class FileManager:
     def make_config(averages: List[str], data_folder_path: str = DATA_FOLDER_PATH,
                     config_folder_path: str = CONFIG_FOLDER_PATH):
         # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
-                                                                       file_name="whole_liver.csv")
+        whole_liver_brightness_data: List[Dict[str, Optional[Union[str, float]]]] = FileManager.load_brightness_data(
+            data_folder_path=data_folder_path,
+            file_name="whole_liver.csv")
 
-        train_data = FileManager.load_brightness_data(data_folder_path=data_folder_path, file_name="train.csv")
+        train_data: List[Dict[str, Optional[Union[str, float]]]] = FileManager.load_brightness_data(data_folder_path=data_folder_path,
+                                                                              file_name="train.csv")
 
         for type in averages:
-            border_point = Predictor.most_powerful_criterion_train(type_of_average=type, train_data=train_data,
-                                                                   whole_liver_brightness_data=whole_liver_brightness_data)
+            border_point: float = Predictor.most_powerful_criterion_train(type_of_average=type, train_data=train_data,
+                                                                          whole_liver_brightness_data=whole_liver_brightness_data)
 
             FileManager.save_data_for_most_powerful_criterion(border_point=border_point,
                                                               type_of_average=type,
                                                               config_folder_path=config_folder_path)
 
-            intersection = Predictor.fuzzy_criterion_train(type_of_average=type, train_data=train_data,
-                                                           whole_liver_brightness_data=whole_liver_brightness_data)
+            intersection: List[List[float]] = Predictor.fuzzy_criterion_train(type_of_average=type,
+                                                                              train_data=train_data,
+                                                                              whole_liver_brightness_data=whole_liver_brightness_data)
 
             FileManager.save_data_for_fuzzy_criterion(sick_in_intersection=intersection[0],
                                                       healthy_in_intersection=intersection[1],

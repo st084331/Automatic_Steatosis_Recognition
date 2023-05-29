@@ -1,6 +1,6 @@
 import math
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional, Union
 import sklearn
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
@@ -9,33 +9,26 @@ from sklearn.preprocessing import PolynomialFeatures
 class Predictor:
 
     @staticmethod
-    def fuzzy_criterion_train(type_of_average: str, whole_liver_brightness_data: List[Dict[str, float]],
-                              train_data: List[Dict[str, float]]) -> List[List[float]]:
+    def fuzzy_criterion_train(type_of_average: str,
+                              whole_liver_brightness_data: List[Dict[str, Optional[Union[str, float]]]],
+                              train_data: List[Dict[str, Optional[Union[str, float]]]]) -> List[List[float]]:
         # print("Start fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness_of_sick_patients = []
-        brightness_of_healthy_patients = []
+        brightness_of_sick_patients: List[float] = []
+        brightness_of_healthy_patients: List[float] = []
         for bd in whole_liver_brightness_data:
             for t in train_data:
                 if 'nii' in bd.keys():
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
                             if type_of_average in bd.keys():
-                                bd_content = str(bd[type_of_average])
-                                if str(bd_content).replace('.', '', 1).isdigit():
-                                    bd_value = float(bd_content)
-                                else:
-                                    raise ValueError
+                                bd_value: float = float(bd[type_of_average])
                             else:
                                 raise Exception(f"{type_of_average} type of average does not exist")
 
                             if 'ground_truth' in t.keys():
-                                t_content = t['ground_truth']
-                                if str(t_content).replace('.', '', 1).isdigit():
-                                    t_value = float(t_content)
-                                else:
-                                    raise ValueError
+                                t_value: float = float(t['ground_truth'])
                             else:
                                 raise Exception("No ground_truth key in train element")
 
@@ -50,14 +43,14 @@ class Predictor:
                     raise Exception(f"Wrong keys in {bd}")
 
         if len(brightness_of_sick_patients) > 0:
-            intersection_max_point = max(brightness_of_sick_patients)
+            intersection_max_point: float = max(brightness_of_sick_patients)
         else:
-            intersection_max_point = float('-inf')
+            intersection_max_point: float = float('-inf')
 
         if len(brightness_of_healthy_patients) > 0:
-            intersection_min_point = min(brightness_of_healthy_patients)
+            intersection_min_point: float = min(brightness_of_healthy_patients)
         else:
-            intersection_min_point = float('inf')
+            intersection_min_point: float = float('inf')
 
         healthy_in_intersection = []
         if intersection_max_point != float('-inf'):
@@ -84,34 +77,26 @@ class Predictor:
         return [sick_in_intersection, healthy_in_intersection]
 
     @staticmethod
-    def most_powerful_criterion_train(type_of_average: str, whole_liver_brightness_data: List[Dict[str, float]],
-                                      train_data: List[Dict[str, float]]) -> float:
+    def most_powerful_criterion_train(type_of_average: str,
+                                      whole_liver_brightness_data: List[Dict[str, Optional[Union[str, float]]]],
+                                      train_data: List[Dict[str, Optional[Union[str, float]]]]) -> float:
         # print("Start most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness_list = []
-        steatosis_status_list = []
+        brightness_list: List[float] = []
+        steatosis_status_list: List[float] = []
         for bd in whole_liver_brightness_data:
             for t in train_data:
                 if 'nii' in bd.keys():
                     if 'nii' in t.keys():
                         if bd['nii'] == t['nii']:
                             if type_of_average in bd.keys():
-                                bd_content = str(bd[type_of_average])
-                                if str(bd_content).replace('.', '', 1).isdigit():
-                                    bd_value = float(bd_content)
-                                else:
-                                    raise ValueError
+                                bd_value: float = float(bd[type_of_average])
                             else:
                                 raise Exception(f"{type_of_average} type of average does not exist")
-
                             brightness_list.append(bd_value)
                             if 'ground_truth' in t.keys():
-                                t_content = t['ground_truth']
-                                if str(t_content).replace('.', '', 1).isdigit():
-                                    t_value = float(t_content)
-                                else:
-                                    raise ValueError
+                                t_value: float = float(t['ground_truth'])
                             else:
                                 raise Exception("No ground_truth key in train element")
                             steatosis_status_list.append(t_value)
@@ -121,9 +106,9 @@ class Predictor:
                     raise Exception(f"Wrong keys in {bd}")
 
         if len(brightness_list) > 0:
-            max_point = max(brightness_list)
-            min_point = min(brightness_list)
-            border_point = (max_point + min_point) / 2
+            max_point: float = float(max(brightness_list))
+            min_point: float = float(min(brightness_list))
+            border_point: float = (max_point + min_point) / 2
 
             pred_steatosis_status_list_init = []
 
@@ -133,11 +118,7 @@ class Predictor:
                         if 'nii' in t.keys():
                             if bd['nii'] == t['nii']:
                                 if type_of_average in bd.keys():
-                                    bd_content = str(bd[type_of_average])
-                                    if str(bd_content).replace('.', '', 1).isdigit():
-                                        bd_value = float(bd_content)
-                                    else:
-                                        raise ValueError
+                                    bd_value: float = float(bd[type_of_average])
                                 else:
                                     raise Exception(f"{type_of_average} type of average does not exist")
                                 if bd_value <= border_point:
@@ -172,11 +153,7 @@ class Predictor:
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
                                     if type_of_average in bd.keys():
-                                        bd_content = str(bd[type_of_average])
-                                        if str(bd_content).replace('.', '', 1).isdigit():
-                                            bd_value = float(bd_content)
-                                        else:
-                                            raise ValueError
+                                        bd_value: float = float(bd[type_of_average])
                                     else:
                                         raise Exception(f"{type_of_average} type of average does not exist")
                                     if bd_value <= current_leftmost_point:
@@ -216,11 +193,7 @@ class Predictor:
                             if 'nii' in t.keys():
                                 if bd['nii'] == t['nii']:
                                     if type_of_average in bd.keys():
-                                        bd_content = str(bd[type_of_average])
-                                        if str(bd_content).replace('.', '', 1).isdigit():
-                                            bd_value = float(bd_content)
-                                        else:
-                                            raise ValueError
+                                        bd_value: float = float(bd[type_of_average])
                                     else:
                                         raise Exception(f"{type_of_average} type of average does not exist")
                                     if bd_value <= current_rightmost_point:
@@ -304,12 +277,13 @@ class Predictor:
         return prediction
 
     @staticmethod
-    def regression_data_maker(whole_study_brightness_data: List[Dict[str, float]],
-                              whole_liver_brightness_data: List[Dict[str, float]], train_data: List[Dict[str, float]],
+    def regression_data_maker(whole_study_brightness_data: List[Dict[str, Optional[Union[str, float]]]],
+                              whole_liver_brightness_data: List[Dict[str, Optional[Union[str, float]]]],
+                              train_data: List[Dict[str, Optional[Union[str, float]]]],
                               types_of_average: List[str],
                               relative_types_of_average: List[str]) -> List[List[float]]:
-        brightness_list = []
-        steatosis_status_list = []
+        brightness_list: List[List[float]] = []
+        steatosis_status_list: List[float] = []
         # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if len(relative_types_of_average) > 0:
             for t in train_data:
@@ -322,31 +296,19 @@ class Predictor:
                                         row = []
                                         for type in types_of_average:
                                             if type in wl.keys():
-                                                wl_content = str(wl[type])
-                                                if str(wl_content).replace('.', '', 1).isdigit():
-                                                    wl_value = float(wl_content)
-                                                else:
-                                                    raise ValueError
+                                                wl_value: float = float(wl[type])
                                             else:
                                                 raise Exception(f"{type} type of average does not exist")
                                             row.append(wl_value)
                                         for type in relative_types_of_average:
                                             if type in ws.keys():
-                                                ws_content = str(ws[type])
-                                                if str(ws_content).replace('.', '', 1).isdigit():
-                                                    ws_value = float(ws_content)
-                                                else:
-                                                    raise ValueError
+                                                ws_value: float = float(ws[type])
                                             else:
                                                 raise Exception(f"{type} type of average does not exist")
                                             row.append(ws_value)
                                         brightness_list.append(row)
                                         if 'ground_truth' in t.keys():
-                                            t_content = t['ground_truth']
-                                            if str(t_content).replace('.', '', 1).isdigit():
-                                                t_value = float(t_content)
-                                            else:
-                                                raise ValueError
+                                            t_value: float = float(t['ground_truth'])
                                         else:
                                             raise Exception("No ground_truth key in train element")
                                         steatosis_status_list.append(t_value)
@@ -366,21 +328,13 @@ class Predictor:
                                 row = []
                                 for type in types_of_average:
                                     if type in wl.keys():
-                                        wl_content = str(wl[type])
-                                        if str(wl_content).replace('.', '', 1).isdigit():
-                                            wl_value = float(wl_content)
-                                        else:
-                                            raise ValueError
+                                        wl_value: float = float(wl[type])
                                     else:
                                         raise Exception(f"{type} type of average does not exist")
                                     row.append(wl_value)
                                 brightness_list.append(row)
                                 if 'ground_truth' in t.keys():
-                                    t_content = t['ground_truth']
-                                    if str(t_content).replace('.', '', 1).isdigit():
-                                        t_value = float(t_content)
-                                    else:
-                                        raise ValueError
+                                    t_value: float = float(t['ground_truth'])
                                 else:
                                     raise Exception("No ground_truth key in train element")
                                 steatosis_status_list.append(t_value)
@@ -436,7 +390,7 @@ class Predictor:
 
     @staticmethod
     def polynomial_regression(values_of_brightness: List[float], brightness_list: List[List[float]],
-                          steatosis_status_list: List[float], degree: int) -> float:
+                              steatosis_status_list: List[float], degree: int) -> float:
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_list_len = len(brightness_list)

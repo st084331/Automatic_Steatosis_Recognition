@@ -7,7 +7,7 @@ from application.code.FileManager import FileManager
 from application.code.FormatConverter import FormatConverter
 from application.code.Init import CONFIG_FOLDER_PATH
 from application.code.Predictor import Predictor
-from typing import List, Dict
+from typing import List, Dict, Optional, Union
 
 
 class RequestHandler:
@@ -82,11 +82,14 @@ class RequestHandler:
         elif method == "Second degree polynomial regression":
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
-                    whole_study_brightness_data: List[Dict[str, float]] = FileManager.load_brightness_data(
+                    whole_study_brightness_data: List[
+                        Dict[str, Optional[Union[str, float]]]] = FileManager.load_brightness_data(
                         "whole_study.csv")
-                    whole_liver_brightness_data: List[Dict[str, float]] = FileManager.load_brightness_data(
+                    whole_liver_brightness_data: List[
+                        Dict[str, Optional[Union[str, float]]]] = FileManager.load_brightness_data(
                         "whole_liver.csv")
-                    train_data: List[Dict[str, float]] = FileManager.load_brightness_data("train.csv")
+                    train_data: List[Dict[str, Optional[Union[str, float]]]] = FileManager.load_brightness_data(
+                        "train.csv")
                     brightness_list, steatosis_status_list = Predictor.regression_data_maker(
                         whole_study_brightness_data=whole_study_brightness_data,
                         whole_liver_brightness_data=whole_liver_brightness_data, train_data=train_data,

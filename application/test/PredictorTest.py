@@ -2,7 +2,6 @@ import os
 import unittest
 
 from application.code.Predictor import Predictor
-from application.test.TestHelper import TestHelper, DATA_FOLDER_PATH, CONFIG_FOLDER_PATH
 
 
 class PredictorTest(unittest.TestCase):
@@ -271,6 +270,7 @@ class PredictorTest(unittest.TestCase):
             Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, "b"],
                                       healthy_intersection=[3.0, 3.5])
 
+
     def test_fuzzy_criterion_empty_healthy_intersection(self):
         result = Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
                                            healthy_intersection=[])
@@ -386,6 +386,13 @@ class PredictorTest(unittest.TestCase):
                 whole_study_brightness_data=[{"nii": "a", "value2": "b", "value3": 8.0}],
                 types_of_average=["value1"], relative_types_of_average=["value2"])
 
+    def test_regression_data_maker_wrong_type_of_ground_truth_train_data(self):
+        with self.assertRaises(ValueError):
+            Predictor.regression_data_maker(
+                whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
+                train_data=[{"nii": "a", "ground_truth": 1.0}],
+                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
+                types_of_average=["value1"], relative_types_of_average=["value2"])
 
     def test_regression_data_maker_empty_whole_liver_brightness_data(self):
         brightness_list, steatosis_status_list = Predictor.regression_data_maker(
