@@ -5,7 +5,7 @@ from datetime import datetime
 from application.code.CT_Handler import CT_Handler
 from application.code.FileManager import FileManager
 from application.code.FormatConverter import FormatConverter
-from application.code.Init import CONFIG_FOLDER_PATH
+from application.code.Init import CONFIG_FOLDER_PATH, PARENT_FOLDER_PATH
 from application.code.Predictor import Predictor
 from typing import List, Dict, Optional, Union
 
@@ -15,7 +15,17 @@ class RequestHandler:
     @staticmethod
     def result_request(types_of_average: List[str],
                        relative_types_of_average: List[str], method: str, folder_path: str, area: str,
-                       config_folder_path: str = CONFIG_FOLDER_PATH) -> float:
+                       config_folder_path: str = CONFIG_FOLDER_PATH,
+                       parent_folder_path: str = PARENT_FOLDER_PATH) -> float:
+
+        if not os.path.exists(config_folder_path):
+            raise Exception(f"{config_folder_path} does not exist")
+
+        if not os.path.exists(parent_folder_path):
+            raise Exception(f"{parent_folder_path} does not exist")
+
+        if not os.path.exists(folder_path):
+            raise Exception(f"{folder_path} does not exist")
 
         # print("Start result_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         folder_struct = os.path.split(folder_path)
@@ -32,8 +42,11 @@ class RequestHandler:
         values_of_brightness: List[float] = RequestHandler.brightness_values_request(area=area,
                                                                                      types_of_average=types_of_average,
                                                                                      relative_types_of_average=relative_types_of_average,
-                                                                                     handler=CT_Handler(folder_path=folder_path,
-                                                                                                        name_of_nifti_wo_extension=name_of_nifti_wo_extension))
+                                                                                     handler=CT_Handler(
+                                                                                         folder_path=folder_path,
+                                                                                         name_of_nifti_wo_extension=name_of_nifti_wo_extension,
+                                                                                         dicom_to_nifti_output_folder_path=parent_folder_path,
+                                                                                         mask_output_folder_path=parent_folder_path))
         # print(f"values_of_brightness = {values_of_brightness}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         if method == "Fuzzy criterion":
@@ -101,39 +114,41 @@ class RequestHandler:
     def brightness_values_request(area: str, types_of_average: List[str], relative_types_of_average: List[str],
                                   handler: CT_Handler) -> List[float]:
         # print("Start brightness_values_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        if area == "Whole liver":
-            brightness_list: List[float] = handler.get_whole_liver_brightness_info()
-        elif area == "Three random areas":
-            brightness_list: List[float] = handler.get_three_areas_brightness_info()
-        elif area == "Two random areas":
-            brightness_list: List[float] = handler.get_two_areas_brightness_info()
-        elif area == "One random area":
-            brightness_list: List[float] = handler.get_one_area_brightness_info()
-        elif area == "100 random points":
-            brightness_list: List[float] = handler.get_random_points_brightness_info()
-        else:
-            raise Exception(f"{area} area is not defined")
+        brightness_values: List[float] = []
 
-        brightness_values = []
-        for type_of_average in types_of_average:
-            if type_of_average == "Median":
-                brightness_values.append(statistics.median(brightness_list))
-            elif type_of_average == "Median grouped":
-                brightness_values.append(statistics.median_grouped(brightness_list))
-            elif type_of_average == "Median low":
-                brightness_values.append(statistics.median_low(brightness_list))
-            elif type_of_average == "Median high":
-                brightness_values.append(statistics.median_high(brightness_list))
-            elif type_of_average == "First quartile":
-                brightness_values.append(statistics.quantiles(brightness_list)[0])
-            elif type_of_average == "Third quartile":
-                brightness_values.append(statistics.quantiles(brightness_list)[2])
-            elif type_of_average == "Mode":
-                brightness_values.append(statistics.mode(brightness_list))
-            elif type_of_average == "Mean":
-                brightness_values.append(statistics.mean(brightness_list))
+        if len(types_of_average) > 0:
+            if area == "Whole liver":
+                brightness_list: List[float] = handler.get_whole_liver_brightness_info()
+            elif area == "Three random areas":
+                brightness_list: List[float] = handler.get_three_areas_brightness_info()
+            elif area == "Two random areas":
+                brightness_list: List[float] = handler.get_two_areas_brightness_info()
+            elif area == "One random area":
+                brightness_list: List[float] = handler.get_one_area_brightness_info()
+            elif area == "100 random points":
+                brightness_list: List[float] = handler.get_random_points_brightness_info()
             else:
-                raise Exception(f"{type_of_average} type of average is not defined")
+                raise Exception(f"{area} area is not defined")
+
+            for type_of_average in types_of_average:
+                if type_of_average == "Median":
+                    brightness_values.append(statistics.median(brightness_list))
+                elif type_of_average == "Median grouped":
+                    brightness_values.append(statistics.median_grouped(brightness_list))
+                elif type_of_average == "Median low":
+                    brightness_values.append(statistics.median_low(brightness_list))
+                elif type_of_average == "Median high":
+                    brightness_values.append(statistics.median_high(brightness_list))
+                elif type_of_average == "First quartile":
+                    brightness_values.append(statistics.quantiles(brightness_list)[0])
+                elif type_of_average == "Third quartile":
+                    brightness_values.append(statistics.quantiles(brightness_list)[2])
+                elif type_of_average == "Mode":
+                    brightness_values.append(statistics.mode(brightness_list))
+                elif type_of_average == "Mean":
+                    brightness_values.append(statistics.mean(brightness_list))
+                else:
+                    raise Exception(f"{type_of_average} type of average is not defined")
 
         if len(relative_types_of_average) > 0:
             relative_brightness_list: List[float] = handler.get_whole_study_brightness_info()
