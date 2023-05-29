@@ -14,11 +14,11 @@ class RequestHandler:
 
     @staticmethod
     def result_request(types_of_average: List[str],
-                       relative_types_of_average: List[str], method: str, folder: str, area: str,
+                       relative_types_of_average: List[str], method: str, folder_path: str, area: str,
                        config_folder_path: str = CONFIG_FOLDER_PATH) -> float:
 
         # print("Start result_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        folder_struct = os.path.split(folder)
+        folder_struct = os.path.split(folder_path)
         # print(f"folder_struct = {folder_struct}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         name_of_nifti_wo_extension: str = folder_struct[len(folder_struct) - 1]
@@ -32,7 +32,7 @@ class RequestHandler:
         values_of_brightness: List[float] = RequestHandler.brightness_values_request(area=area,
                                                                                      types_of_average=types_of_average,
                                                                                      relative_types_of_average=relative_types_of_average,
-                                                                                     handler=CT_Handler(folder=folder,
+                                                                                     handler=CT_Handler(folder_path=folder_path,
                                                                                                         name_of_nifti_wo_extension=name_of_nifti_wo_extension))
         # print(f"values_of_brightness = {values_of_brightness}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -61,7 +61,7 @@ class RequestHandler:
             else:
                 raise Exception("Incorrect number of brightness values")
 
-        if "regression" in method:
+        elif "regression" in method:
             if method == "Second degree polynomial regression":
                 degree = 2
             elif method == "Linear regression":

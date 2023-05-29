@@ -128,11 +128,11 @@ class MainWindow(QMainWindow):
     def handle_analyse_button(self):
         # print(f"Start handle_analyse_button |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        folder: str = str(self.input.text())
+        folder_path: str = str(self.input.text())
         method: str = self.method_combobox.currentText()
         area: str = self.area_combobox.currentText()
 
-        # print(f"folder = {folder}; method = {method}; area = {area}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        # print(f"folder_path = {folder_path}; method = {method}; area = {area}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         if "regression" in method:
             types_of_average: List[str] = self.averages_combobox.currentData()
@@ -146,17 +146,17 @@ class MainWindow(QMainWindow):
         if len(types_of_average) >= 1:
             # print("len of types_of_average >= 1 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-            if os.path.exists(folder):
+            if os.path.exists(folder_path):
                 # print(f"{folder} exists |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
                 substr: str = ".dcm"
-                if FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == 1:
+                if FileManager.check_dcm_only_in_folder(folder_path=folder_path, substr=substr) == 1:
                     # print(f"FileManager.check_dcm_in_folder(folder={folder}, substr={substr}) is True", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                    result = f"The probability of having steatosis is {RequestHandler.result_request(area=area, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method, folder=folder) * 100}%"
+                    result = f"The probability of having steatosis is {round(RequestHandler.result_request(area=area, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method, folder_path=folder_path), 2) * 100}%"
 
                     FileManager.delete_residual_files(".nii")
-                elif FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == -1:
+                elif FileManager.check_dcm_only_in_folder(folder_path=folder_path, substr=substr) == -1:
                     result = "The folder contains not only dicom files"
                 else:
                     result = "This folder is empty"

@@ -11,41 +11,41 @@ from livermask import livermask
 
 class CT_Handler:
 
-    def __init__(self, folder: str, name_of_nifti_wo_extension: str,
-                 dicom_to_nifti_output_folder: str = PARENT_FOLDER_PATH,
-                 mask_output_folder: str = PARENT_FOLDER_PATH, mask_input_folder: str = PARENT_FOLDER_PATH,
+    def __init__(self, folder_path: str, name_of_nifti_wo_extension: str,
+                 dicom_to_nifti_output_folder_path: str = PARENT_FOLDER_PATH,
+                 mask_output_folder_path: str = PARENT_FOLDER_PATH,
                  cpu: bool = CPU,
                  verbose: bool = VERBOSE, vessels: bool = VESSELS):
 
         # print("Start CT_Handler __init__ |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        self.folder: str = folder
+        self.folder_path: str = folder_path
         self.name_of_nifti_wo_extension: str = name_of_nifti_wo_extension
         self.name_of_nifti: str = name_of_nifti_wo_extension + ".nii"
         self.mask_file_name: str = name_of_nifti_wo_extension + "-livermask2.nii"
 
-        self.nii_file_path: str = self.dicom_to_nifti(output_folder=dicom_to_nifti_output_folder)
+        self.nii_file_path: str = self.dicom_to_nifti(output_folder_path=dicom_to_nifti_output_folder_path)
 
-        self.mask_file_path: str = self.make_mask(output_folder=mask_output_folder, input_folder=mask_input_folder,
+        self.mask_file_path: str = self.make_mask(output_folder_path=mask_output_folder_path, input_folder_path=dicom_to_nifti_output_folder_path,
                                                   cpu=cpu,
                                                   verbose=verbose,
                                                   vessels=vessels)
 
-    def dicom_to_nifti(self, output_folder: str) -> str:
+    def dicom_to_nifti(self, output_folder_path: str) -> str:
 
         # print("Start dicom_to_nifti |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        output_path: str = os.path.join(output_folder, self.name_of_nifti)
-        dicom2nifti.dicom_series_to_nifti(self.folder, output_path, reorient_nifti=False)
+        output_path: str = os.path.join(output_folder_path, self.name_of_nifti)
+        dicom2nifti.dicom_series_to_nifti(self.folder_path, output_path, reorient_nifti=False)
         # print(f"dicom_to_nifti saved as {output} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         return output_path
 
-    def make_mask(self, output_folder: str, input_folder: str, cpu: bool, verbose: bool, vessels: bool) -> str:
+    def make_mask(self, output_folder_path: str, input_folder_path: str, cpu: bool, verbose: bool, vessels: bool) -> str:
 
         # print("Start CT_Handler make_mask |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        output_folder_wo_extension: str = os.path.join(output_folder, self.name_of_nifti_wo_extension)
-        input: str = os.path.join(input_folder, self.name_of_nifti)
-        livermask.func(path=input, output=output_folder_wo_extension, cpu=cpu, verbose=verbose, vessels=vessels)
+        output_folder_path_wo_extension: str = os.path.join(output_folder_path, self.name_of_nifti_wo_extension)
+        input: str = os.path.join(input_folder_path, self.name_of_nifti)
+        livermask.func(path=input, output=output_folder_path_wo_extension, cpu=cpu, verbose=verbose, vessels=vessels)
         # print(f"make_mask saved as {output} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        return os.path.join(output_folder, self.mask_file_name)
+        return os.path.join(output_folder_path, self.mask_file_name)
 
     def get_whole_study_brightness_info(self) -> List[float]:
 
