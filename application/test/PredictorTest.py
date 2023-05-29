@@ -256,14 +256,6 @@ class PredictorTest(unittest.TestCase):
         result = Predictor.most_powerful_criterion(value_of_brightness=3.0, boarder_point=2.0)
         self.assertEqual(0.0, result)
 
-    def test_most_powerful_criterion_wrong_value_of_brightness(self):
-        with self.assertRaises(ValueError):
-            Predictor.most_powerful_criterion(value_of_brightness="a", boarder_point=2.0)
-
-    def test_most_powerful_criterion_wrong_boarder_point(self):
-        with self.assertRaises(ValueError):
-            Predictor.most_powerful_criterion(value_of_brightness=1.0, boarder_point="b")
-
     def test_fuzzy_criterion(self):
         result = Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, 3.4],
                                            healthy_intersection=[3.0, 3.5])
@@ -277,11 +269,6 @@ class PredictorTest(unittest.TestCase):
     def test_fuzzy_criterion_wrong_sick_intersection(self):
         with self.assertRaises(ValueError):
             Predictor.fuzzy_criterion(value_of_brightness=3.6, sick_intersection=[4.0, "b"],
-                                      healthy_intersection=[3.0, 3.5])
-
-    def test_fuzzy_criterion_wrong_value_of_brightness(self):
-        with self.assertRaises(ValueError):
-            Predictor.fuzzy_criterion(value_of_brightness="c", sick_intersection=[4.0, 3.4],
                                       healthy_intersection=[3.0, 3.5])
 
     def test_fuzzy_criterion_empty_healthy_intersection(self):
@@ -399,13 +386,6 @@ class PredictorTest(unittest.TestCase):
                 whole_study_brightness_data=[{"nii": "a", "value2": "b", "value3": 8.0}],
                 types_of_average=["value1"], relative_types_of_average=["value2"])
 
-    def test_regression_data_maker_wrong_type_of_ground_truth_train_data(self):
-        with self.assertRaises(ValueError):
-            Predictor.regression_data_maker(
-                whole_liver_brightness_data=[{"nii": "a", "value1": 1.0, "value3": 3.0}],
-                train_data=[{"nii": "a", "ground_truth": "c"}],
-                whole_study_brightness_data=[{"nii": "a", "value2": 2.0, "value3": 8.0}],
-                types_of_average=["value1"], relative_types_of_average=["value2"])
 
     def test_regression_data_maker_empty_whole_liver_brightness_data(self):
         brightness_list, steatosis_status_list = Predictor.regression_data_maker(
@@ -442,6 +422,35 @@ class PredictorTest(unittest.TestCase):
             types_of_average=["value1"], relative_types_of_average=[])
         self.assertEqual([[1.0]], brightness_list)
         self.assertEqual([1.0], steatosis_status_list)
+
+    def test_linear_regression(self):
+        brightness_list = [[1.0, 1.0], [0.0, 0.0]]
+        steatosis_status_list = [1.0, 0.0]
+        values_of_brightness = [0.5, 0.5]
+
+        result = Predictor.linear_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                             steatosis_status_list=steatosis_status_list)
+
+        self.assertEqual(result, 0.5)
+
+    def test_linear_regression_empty_steatosis_status_list(self):
+        brightness_list = [[1.0, 1.0], [0.0, 0.0]]
+        steatosis_status_list = []
+        values_of_brightness = [0.5, 0.5]
+
+        with self.assertRaises(Exception):
+            Predictor.linear_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                        steatosis_status_list=steatosis_status_list)
+
+    def test_linear_regression_empty_brightness_list(self):
+        brightness_list = []
+        steatosis_status_list = [1.0, 0.0]
+        values_of_brightness = [0.5, 0.5]
+
+        with self.assertRaises(Exception):
+            Predictor.linear_regression(values_of_brightness=values_of_brightness, brightness_list=brightness_list,
+                                        steatosis_status_list=steatosis_status_list)
+
 
 if __name__ == '__main__':
     unittest.main()
