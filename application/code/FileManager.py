@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+from typing import List, Dict
 from datetime import datetime
 
 from application.code.Init import DATA_FOLDER_PATH, CONFIG_FOLDER_PATH, PARENT_FOLDER_PATH
@@ -10,13 +11,14 @@ from application.code.Predictor import Predictor
 class FileManager:
 
     @staticmethod
-    def load_brightness_data(file_name, data_folder_path=DATA_FOLDER_PATH):
+    def load_brightness_data(file_name: str, data_folder_path: str = DATA_FOLDER_PATH) -> List[Dict[str, float]]:
+
         # print("Start load_brightness_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness_path = os.path.join(data_folder_path, file_name)
+        brightness_path: str = os.path.join(data_folder_path, file_name)
 
         if os.path.exists(brightness_path):
 
-            brightness_data = []
+            brightness_data: list = []
             with open(brightness_path) as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -26,29 +28,30 @@ class FileManager:
 
             # print("End load_brightness_data |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
             return brightness_data
+
         else:
             raise FileExistsError
 
     @staticmethod
-    def load_data_for_fuzzy_criterion(type_of_average, config_folder_path=CONFIG_FOLDER_PATH):
-
+    def load_data_for_fuzzy_criterion(type_of_average: str, config_folder_path: str = CONFIG_FOLDER_PATH) -> List[
+        List[float]]:
         # print("Start load_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        fuzzy_criterion_train_sick_in_intersection_path = os.path.join(config_folder_path,
-                                                                       'fuzzy_criterion_train_sick_in_intersection_'
-                                                                       + type_of_average + '.json')
+        fuzzy_criterion_train_sick_in_intersection_path: str = os.path.join(config_folder_path,
+                                                                            'fuzzy_criterion_train_sick_in_intersection_'
+                                                                            + type_of_average + '.json')
         if os.path.exists(fuzzy_criterion_train_sick_in_intersection_path):
 
             with open(fuzzy_criterion_train_sick_in_intersection_path, 'rb') as f:
-                sick_intersection = json.load(f)
+                sick_intersection: List[float] = json.load(f)
         else:
             raise FileExistsError
 
-        fuzzy_criterion_train_healthy_in_intersection_path = os.path.join(config_folder_path,
-                                                                          'fuzzy_criterion_train_healthy_in_intersection_'
-                                                                          + type_of_average + '.json')
+        fuzzy_criterion_train_healthy_in_intersection_path: str = os.path.join(config_folder_path,
+                                                                               'fuzzy_criterion_train_healthy_in_intersection_'
+                                                                               + type_of_average + '.json')
         if os.path.exists(fuzzy_criterion_train_healthy_in_intersection_path):
             with open(fuzzy_criterion_train_healthy_in_intersection_path, 'rb') as f:
-                healthy_intersection = json.load(f)
+                healthy_intersection: List[float] = json.load(f)
         else:
             raise FileExistsError
 
@@ -57,11 +60,11 @@ class FileManager:
         return [sick_intersection, healthy_intersection]
 
     @staticmethod
-    def load_data_for_most_powerful_criterion(type_of_average, config_folder_path=CONFIG_FOLDER_PATH):
-
+    def load_data_for_most_powerful_criterion(type_of_average: str,
+                                              config_folder_path: str = CONFIG_FOLDER_PATH) -> float:
         # print("Start load_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        most_powerful_criterion_train_path = os.path.join(config_folder_path,
-                                                          'most_powerful_criterion_train_' + type_of_average + '.txt')
+        most_powerful_criterion_train_path: str = os.path.join(config_folder_path,
+                                                               'most_powerful_criterion_train_' + type_of_average + '.txt')
         if os.path.exists(most_powerful_criterion_train_path):
             with open(most_powerful_criterion_train_path, "r") as f:
                 content = f.read()
@@ -76,14 +79,14 @@ class FileManager:
         # print("End load_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
-    def save_data_for_fuzzy_criterion(sick_in_intersection, healthy_in_intersection, type_of_average,
-                                      config_folder_path=CONFIG_FOLDER_PATH):
-
+    def save_data_for_fuzzy_criterion(sick_in_intersection: List[float], healthy_in_intersection: List[float],
+                                      type_of_average: str,
+                                      config_folder_path: str = CONFIG_FOLDER_PATH) -> List[str]:
         # print("Start save_data_for_fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        sick_in_intersection_path = os.path.join(config_folder_path,
-                                                 'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json')
-        healthy_in_intersection_path = os.path.join(config_folder_path,
-                                                    'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json')
+        sick_in_intersection_path: str = os.path.join(config_folder_path,
+                                                      'fuzzy_criterion_train_sick_in_intersection_' + type_of_average + '.json')
+        healthy_in_intersection_path: str = os.path.join(config_folder_path,
+                                                         'fuzzy_criterion_train_healthy_in_intersection_' + type_of_average + '.json')
 
         if not os.path.exists(config_folder_path):
             os.mkdir(config_folder_path)
@@ -101,8 +104,8 @@ class FileManager:
         return [sick_in_intersection_path, healthy_in_intersection_path]
 
     @staticmethod
-    def save_data_for_most_powerful_criterion(border_point, type_of_average, config_folder_path=CONFIG_FOLDER_PATH):
-
+    def save_data_for_most_powerful_criterion(border_point: float, type_of_average: str,
+                                              config_folder_path: str = CONFIG_FOLDER_PATH) -> str:
         # print("Start save_data_for_most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         if not os.path.exists(config_folder_path):
@@ -111,8 +114,8 @@ class FileManager:
         if not os.path.exists(config_folder_path):
             raise Exception("Unable to create config folder")
 
-        border_point_path = os.path.join(config_folder_path,
-                                         'most_powerful_criterion_train_' + type_of_average + '.txt')
+        border_point_path: str = os.path.join(config_folder_path,
+                                              'most_powerful_criterion_train_' + type_of_average + '.txt')
 
         with open(border_point_path, 'w') as f:
             f.write(str(border_point))
@@ -121,14 +124,14 @@ class FileManager:
         return border_point_path
 
     @staticmethod
-    def delete_residual_files(substr, folder_path=PARENT_FOLDER_PATH):
+    def delete_residual_files(substr: str, folder_path: str = PARENT_FOLDER_PATH):
         # print("Start delete_residual_files |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if os.path.exists(folder_path):
-            folder = os.listdir(folder_path)
+            folder: List[str] = os.listdir(folder_path)
             # print(f"files = {files} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
             for file in folder:
                 if substr in file:
-                    residual_file_path = os.path.join(folder_path, file)
+                    residual_file_path: str = os.path.join(folder_path, file)
                     if os.path.exists(residual_file_path):
                         os.remove(residual_file_path)
                     else:
@@ -140,10 +143,10 @@ class FileManager:
         # print("End delete_residual_files |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
-    def check_dcm_only_in_folder(folder_path, substr):
+    def check_dcm_only_in_folder(folder_path: str, substr: str) -> int:
         # print("Start check_dcm_in_folder |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if os.path.exists(folder_path):
-            files_in_folder = os.listdir(folder_path)
+            files_in_folder: List[str] = os.listdir(folder_path)
             if len(files_in_folder) > 0:
                 for file in files_in_folder:
                     if substr not in file:
@@ -158,7 +161,8 @@ class FileManager:
             raise Exception("Folder does not exist")
 
     @staticmethod
-    def make_config(averages, data_folder_path=DATA_FOLDER_PATH, config_folder_path=CONFIG_FOLDER_PATH):
+    def make_config(averages: List[str], data_folder_path: str = DATA_FOLDER_PATH,
+                    config_folder_path: str = CONFIG_FOLDER_PATH):
         # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         whole_liver_brightness_data = FileManager.load_brightness_data(data_folder_path=data_folder_path,
                                                                        file_name="whole_liver.csv")

@@ -1,10 +1,11 @@
 from datetime import datetime
+from typing import List
 
 
 class FormatConverter:
 
     @staticmethod
-    def types_of_average_to_current_types(types_of_average):
+    def types_of_average_to_current_types(types_of_average: List[str]) -> List[str]:
         # print(f"Start types_of_average_to_current_types: {types_of_average} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         current_types = []

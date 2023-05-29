@@ -7,6 +7,8 @@ from application.code.FileManager import FileManager
 from application.code.FormatConverter import FormatConverter
 from application.code.Init import AVERAGES
 from application.code.MainWindow import MainWindow
+from typing import List
+
 
 class Application:
 
@@ -15,7 +17,7 @@ class Application:
 
         FileManager.delete_residual_files(substr=".nii")
 
-        current_types = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
+        current_types: List[str] = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
 
         FileManager.make_config(averages=current_types)
 

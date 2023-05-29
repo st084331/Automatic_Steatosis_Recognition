@@ -1,8 +1,8 @@
 import os
 from datetime import datetime
+from typing import List
 
 from PyQt5.QtWidgets import QWidget, QComboBox, QLabel, QVBoxLayout, QLineEdit, QPushButton, QMainWindow
-from application.code.CT_Handler import CT_Handler
 from application.code.CheckableComboBox import CheckableComboBox
 from application.code.FileManager import FileManager
 from application.code.Init import AVERAGES, AREAS, METHODS
@@ -128,17 +128,17 @@ class MainWindow(QMainWindow):
     def handle_analyse_button(self):
         # print(f"Start handle_analyse_button |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        folder = str(self.input.text())
-        method = self.method_combobox.currentText()
-        area = self.area_combobox.currentText()
+        folder: str = str(self.input.text())
+        method: str = self.method_combobox.currentText()
+        area: str = self.area_combobox.currentText()
 
         # print(f"folder = {folder}; method = {method}; area = {area}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         if "regression" in method:
-            types_of_average = self.averages_combobox.currentData()
-            relative_types_of_average = self.relative_averages_combobox.currentData()
+            types_of_average: List[str] = self.averages_combobox.currentData()
+            relative_types_of_average: List[str] = self.relative_averages_combobox.currentData()
         else:
-            types_of_average = [self.average_combobox.currentText()]
+            types_of_average: List[str] = [self.average_combobox.currentText()]
             relative_types_of_average = []
 
         # print(f"types_of_average = {types_of_average}; relative_types_of_average = {relative_types_of_average}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -149,24 +149,11 @@ class MainWindow(QMainWindow):
             if os.path.exists(folder):
                 # print(f"{folder} exists |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                substr = ".dcm"
+                substr: str = ".dcm"
                 if FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == 1:
                     # print(f"FileManager.check_dcm_in_folder(folder={folder}, substr={substr}) is True", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-                    folder_struct = os.path.split(folder)
-                    # print(f"folder_struct = {folder_struct}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-                    name_of_nifti_wo_extension = folder_struct[len(folder_struct) - 1]
-                    # print(f"name_of_nifti_wo_extension = {name_of_nifti_wo_extension}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-                    values_of_brightness = RequestHandler.brightness_values_request(area=area,
-                                                                                    types_of_average=types_of_average,
-                                                                                    relative_types_of_average=relative_types_of_average,
-                                                                                    handler=CT_Handler(folder=folder,
-                                                                                                       name_of_nifti_wo_extension=name_of_nifti_wo_extension))
-                    # print(f"values_of_brightness = {values_of_brightness}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-                    result = f"The probability of having steatosis is {RequestHandler.result_request(values_of_brightness=values_of_brightness, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method) * 100}%"
+                    result = f"The probability of having steatosis is {RequestHandler.result_request(area=area, types_of_average=types_of_average, relative_types_of_average=relative_types_of_average, method=method, folder=folder) * 100}%"
 
                     FileManager.delete_residual_files(".nii")
                 elif FileManager.check_dcm_only_in_folder(folder_path=folder, substr=substr) == -1:

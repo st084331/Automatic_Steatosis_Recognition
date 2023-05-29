@@ -1,29 +1,49 @@
+import os
 import statistics
 from datetime import datetime
 
+from application.code.CT_Handler import CT_Handler
 from application.code.FileManager import FileManager
 from application.code.FormatConverter import FormatConverter
 from application.code.Init import CONFIG_FOLDER_PATH
 from application.code.Predictor import Predictor
+from typing import List, Dict
 
 
 class RequestHandler:
 
     @staticmethod
-    def result_request(values_of_brightness, types_of_average, relative_types_of_average, method,
-                       config_folder_path=CONFIG_FOLDER_PATH):
+    def result_request(types_of_average: List[str],
+                       relative_types_of_average: List[str], method: str, folder: str, area: str,
+                       config_folder_path: str = CONFIG_FOLDER_PATH) -> float:
+
         # print("Start result_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+        folder_struct = os.path.split(folder)
+        # print(f"folder_struct = {folder_struct}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        name_of_nifti_wo_extension: str = folder_struct[len(folder_struct) - 1]
+        # print(f"name_of_nifti_wo_extension = {name_of_nifti_wo_extension}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         current_types = FormatConverter.types_of_average_to_current_types(types_of_average=types_of_average)
 
-        relative_current_types = FormatConverter.types_of_average_to_current_types(
+        current_relative_types = FormatConverter.types_of_average_to_current_types(
             types_of_average=relative_types_of_average)
+
+        values_of_brightness: List[float] = RequestHandler.brightness_values_request(area=area,
+                                                                                     types_of_average=types_of_average,
+                                                                                     relative_types_of_average=relative_types_of_average,
+                                                                                     handler=CT_Handler(folder=folder,
+                                                                                                        name_of_nifti_wo_extension=name_of_nifti_wo_extension))
+        # print(f"values_of_brightness = {values_of_brightness}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         if method == "Fuzzy criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
-                    result = Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
-                                                       type_of_average=current_types[0])
+                    sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(
+                        type_of_average=current_types[0])
+                    result: float = Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
+                                                              healthy_intersection=healthy_intersection,
+                                                              sick_intersection=sick_intersection)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -32,10 +52,10 @@ class RequestHandler:
         elif method == "Most powerful criterion":
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
-                    boarder_point = FileManager.load_data_for_most_powerful_criterion(
+                    boarder_point: float = FileManager.load_data_for_most_powerful_criterion(
                         type_of_average=current_types[0], config_folder_path=config_folder_path)
-                    result = Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
-                                                               boarder_point=boarder_point)
+                    result: float = Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
+                                                                      boarder_point=boarder_point)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -44,9 +64,16 @@ class RequestHandler:
         elif method == "Linear regression":
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
-                    result = Predictor.linear_regression(values_of_brightness=values_of_brightness,
-                                                         types_of_average=current_types,
-                                                         relative_types_of_average=relative_current_types)
+                    whole_study_brightness_data = FileManager.load_brightness_data("whole_study.csv")
+                    whole_liver_brightness_data = FileManager.load_brightness_data("whole_liver.csv")
+                    train_data = FileManager.load_brightness_data("train.csv")
+                    brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+                        whole_study_brightness_data=whole_study_brightness_data,
+                        whole_liver_brightness_data=whole_liver_brightness_data, train_data=train_data,
+                        types_of_average=current_types, relative_types_of_average=current_relative_types)
+                    result: float = Predictor.linear_regression(values_of_brightness=values_of_brightness,
+                                                                brightness_list=brightness_list,
+                                                                steatosis_status_list=steatosis_status_list)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -55,9 +82,19 @@ class RequestHandler:
         elif method == "Second degree polynomial regression":
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
-                    result = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
-                                                             types_of_average=current_types,
-                                                             relative_types_of_average=relative_current_types, degree=2)
+                    whole_study_brightness_data: List[Dict[str, float]] = FileManager.load_brightness_data(
+                        "whole_study.csv")
+                    whole_liver_brightness_data: List[Dict[str, float]] = FileManager.load_brightness_data(
+                        "whole_liver.csv")
+                    train_data: List[Dict[str, float]] = FileManager.load_brightness_data("train.csv")
+                    brightness_list, steatosis_status_list = Predictor.regression_data_maker(
+                        whole_study_brightness_data=whole_study_brightness_data,
+                        whole_liver_brightness_data=whole_liver_brightness_data, train_data=train_data,
+                        types_of_average=current_types, relative_types_of_average=current_relative_types)
+                    result: float = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
+                                                                    brightness_list=brightness_list,
+                                                                    steatosis_status_list=steatosis_status_list,
+                                                                    degree=2)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:
@@ -70,18 +107,19 @@ class RequestHandler:
         return result
 
     @staticmethod
-    def brightness_values_request(area, types_of_average, relative_types_of_average, handler):
+    def brightness_values_request(area: str, types_of_average: List[str], relative_types_of_average: List[str],
+                                  handler: CT_Handler) -> List[float]:
         # print("Start brightness_values_request |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if area == "Whole liver":
-            brightness_list = handler.get_whole_liver_brightness_info()
+            brightness_list: List[float] = handler.get_whole_liver_brightness_info()
         elif area == "Three random areas":
-            brightness_list = handler.get_three_areas_brightness_info()
+            brightness_list: List[float] = handler.get_three_areas_brightness_info()
         elif area == "Two random areas":
-            brightness_list = handler.get_two_areas_brightness_info()
+            brightness_list: List[float] = handler.get_two_areas_brightness_info()
         elif area == "One random area":
-            brightness_list = handler.get_one_area_brightness_info()
+            brightness_list: List[float] = handler.get_one_area_brightness_info()
         elif area == "100 random points":
-            brightness_list = handler.get_random_points_brightness_info()
+            brightness_list: List[float] = handler.get_random_points_brightness_info()
         else:
             raise Exception(f"{area} area is not defined")
 
@@ -107,7 +145,7 @@ class RequestHandler:
                 raise Exception(f"{type_of_average} type of average is not defined")
 
         if len(relative_types_of_average) > 0:
-            relative_brightness_list = handler.full_img_brightness_info()
+            relative_brightness_list: List[float] = handler.get_whole_study_brightness_info()
             for type_of_average in relative_types_of_average:
                 if type_of_average == "Median":
                     brightness_values.append(statistics.median(relative_brightness_list))

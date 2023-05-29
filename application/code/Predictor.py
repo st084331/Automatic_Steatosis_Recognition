@@ -1,6 +1,6 @@
 import math
 from datetime import datetime
-
+from typing import List, Dict
 import sklearn
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
@@ -9,7 +9,8 @@ from sklearn.preprocessing import PolynomialFeatures
 class Predictor:
 
     @staticmethod
-    def fuzzy_criterion_train(type_of_average, whole_liver_brightness_data, train_data):
+    def fuzzy_criterion_train(type_of_average: str, whole_liver_brightness_data: List[Dict[str, float]],
+                              train_data: List[Dict[str, float]]) -> List[List[float]]:
         # print("Start fuzzy_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -83,7 +84,8 @@ class Predictor:
         return [sick_in_intersection, healthy_in_intersection]
 
     @staticmethod
-    def most_powerful_criterion_train(type_of_average, whole_liver_brightness_data, train_data):
+    def most_powerful_criterion_train(type_of_average: str, whole_liver_brightness_data: List[Dict[str, float]],
+                                      train_data: List[Dict[str, float]]) -> float:
         # print("Start most_powerful_criterion_train |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         # print("Start finding best score point", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -252,21 +254,19 @@ class Predictor:
             raise Exception("Brightness list is empty")
 
     @staticmethod
-    def most_powerful_criterion(value_of_brightness, boarder_point):
+    def most_powerful_criterion(value_of_brightness: float, boarder_point: float) -> float:
 
         # print("Start most_powerful_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        if str(value_of_brightness).replace(".", "", 1).isdigit() or str(boarder_point).replace(".", "", 1).isdigit():
-            if float(value_of_brightness) <= float(boarder_point):
-                # print("End most_powerful_criterion with 1.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                return 1.0
-            else:
-                # print("End most_powerful_criterion with 0.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-                return 0.0
+        if value_of_brightness <= boarder_point:
+            # print("End most_powerful_criterion with 1.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+            return 1.0
         else:
-            raise ValueError
+            # print("End most_powerful_criterion with 0.0 |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+            return 0.0
 
     @staticmethod
-    def fuzzy_criterion(value_of_brightness, sick_intersection, healthy_intersection):
+    def fuzzy_criterion(value_of_brightness: float, sick_intersection: List[float],
+                        healthy_intersection: List[float]) -> float:
         # print("Start fuzzy_criterion |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         for elem in healthy_intersection:
             if not str(elem).replace(".", "", 1).isdigit():
@@ -274,8 +274,6 @@ class Predictor:
         for elem in sick_intersection:
             if not str(elem).replace(".", "", 1).isdigit():
                 raise ValueError
-        if not str(value_of_brightness).replace(".", "", 1).isdigit():
-            raise ValueError
 
         if len(sick_intersection) == 0 and len(healthy_intersection) == 0:
             raise Exception("Impossible to predict")
@@ -306,8 +304,10 @@ class Predictor:
         return prediction
 
     @staticmethod
-    def regression_data_maker(whole_study_brightness_data, whole_liver_brightness_data, train_data, types_of_average,
-                              relative_types_of_average):
+    def regression_data_maker(whole_study_brightness_data: List[Dict[str, float]],
+                              whole_liver_brightness_data: List[Dict[str, float]], train_data: List[Dict[str, float]],
+                              types_of_average: List[str],
+                              relative_types_of_average: List[str]) -> List[List[float]]:
         brightness_list = []
         steatosis_status_list = []
         # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
@@ -393,16 +393,33 @@ class Predictor:
         return [brightness_list, steatosis_status_list]
 
     @staticmethod
-    def linear_regression(values_of_brightness, whole_study_brightness_data, whole_liver_brightness_data, train_data,
-                          types_of_average, relative_types_of_average):
+    def linear_regression(values_of_brightness: List[float], brightness_list: List[List[float]],
+                          steatosis_status_list: List[float]) -> float:
 
         # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness_list, steatosis_status_list = Predictor.regression_data_maker(whole_study_brightness_data,
-                                                                                 whole_liver_brightness_data,
-                                                                                 train_data, types_of_average,
-                                                                                 relative_types_of_average)
-        if len(brightness_list) == 0 or len(steatosis_status_list) == 0:
+        brightness_list_len = len(brightness_list)
+        steatosis_status_list_len = len(steatosis_status_list)
+        values_of_brightness_len = len(values_of_brightness)
+        if brightness_list_len == 0 or steatosis_status_list_len == 0 or values_of_brightness_len == 0:
             raise Exception("Impossible to predict")
+
+        if brightness_list_len != steatosis_status_list_len:
+            raise Exception("Unable to build mapping")
+
+        for elem in brightness_list:
+            if type(elem) is not list:
+                raise ValueError
+            if len(elem) == 0:
+                raise Exception("Empty element in brightness_list")
+            if len(elem) != len(values_of_brightness):
+                raise Exception("Different number of arguments for list elem and values_of_brightness")
+            for value in elem:
+                if not str(value).replace(".", "", 1).isdigit():
+                    raise ValueError
+
+        for value in steatosis_status_list:
+            if not str(value).replace(".", "", 1).isdigit():
+                raise ValueError
 
         # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -418,16 +435,33 @@ class Predictor:
         return result_pred[0]
 
     @staticmethod
-    def polynomial_regression(whole_study_brightness_data, whole_liver_brightness_data, train_data,
-                              values_of_brightness, types_of_average, relative_types_of_average, degree):
+    def polynomial_regression(values_of_brightness: List[float], brightness_list: List[List[float]],
+                          steatosis_status_list: List[float], degree: int) -> float:
 
         # print("Start polynomial_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness_list, steatosis_status_list = Predictor.regression_data_maker(whole_study_brightness_data,
-                                                                                 whole_liver_brightness_data,
-                                                                                 train_data, types_of_average,
-                                                                                 relative_types_of_average)
-        if len(brightness_list) == 0 or len(steatosis_status_list) == 0:
+        brightness_list_len = len(brightness_list)
+        steatosis_status_list_len = len(steatosis_status_list)
+        values_of_brightness_len = len(values_of_brightness)
+        if brightness_list_len == 0 or steatosis_status_list_len == 0 or values_of_brightness_len == 0:
             raise Exception("Impossible to predict")
+
+        if brightness_list_len != steatosis_status_list_len:
+            raise Exception("Unable to build mapping")
+
+        for elem in brightness_list:
+            if type(elem) is not list:
+                raise ValueError
+            if len(elem) == 0:
+                raise Exception("Empty element in brightness_list")
+            if len(elem) != len(values_of_brightness):
+                raise Exception("Different number of arguments for list elem and values_of_brightness")
+            for value in elem:
+                if not str(value).replace(".", "", 1).isdigit():
+                    raise ValueError
+
+        for value in steatosis_status_list:
+            if not str(value).replace(".", "", 1).isdigit():
+                raise ValueError
         # print("Start training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         poly_model = PolynomialFeatures(degree=degree)
