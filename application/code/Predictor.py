@@ -361,19 +361,10 @@ class Predictor:
             raise Exception("Unable to build mapping")
 
         for elem in brightness_list:
-            if type(elem) is not list:
-                raise ValueError
             if len(elem) == 0:
                 raise Exception("Empty element in brightness_list")
-            if len(elem) != len(values_of_brightness):
+            if len(elem) != values_of_brightness_len:
                 raise Exception("Different number of arguments for list elem and values_of_brightness")
-            for value in elem:
-                if not str(value).replace(".", "", 1).isdigit():
-                    raise ValueError
-
-        for value in steatosis_status_list:
-            if not str(value).replace(".", "", 1).isdigit():
-                raise ValueError
 
         # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
@@ -403,19 +394,10 @@ class Predictor:
             raise Exception("Unable to build mapping")
 
         for elem in brightness_list:
-            if type(elem) is not list:
-                raise ValueError
             if len(elem) == 0:
                 raise Exception("Empty element in brightness_list")
-            if len(elem) != len(values_of_brightness):
+            if len(elem) != values_of_brightness_len:
                 raise Exception("Different number of arguments for list elem and values_of_brightness")
-            for value in elem:
-                if not str(value).replace(".", "", 1).isdigit():
-                    raise ValueError
-
-        for value in steatosis_status_list:
-            if not str(value).replace(".", "", 1).isdigit():
-                raise ValueError
         # print("Start training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         poly_model = PolynomialFeatures(degree=degree)
