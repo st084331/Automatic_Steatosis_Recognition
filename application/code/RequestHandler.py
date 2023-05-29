@@ -61,25 +61,13 @@ class RequestHandler:
             else:
                 raise Exception("Incorrect number of brightness values")
 
-        elif method == "Linear regression":
-            if len(values_of_brightness) >= 1:
-                if len(types_of_average) >= 1:
-                    whole_study_brightness_data = FileManager.load_brightness_data("whole_study.csv")
-                    whole_liver_brightness_data = FileManager.load_brightness_data("whole_liver.csv")
-                    train_data = FileManager.load_brightness_data("train.csv")
-                    brightness_list, steatosis_status_list = Predictor.regression_data_maker(
-                        whole_study_brightness_data=whole_study_brightness_data,
-                        whole_liver_brightness_data=whole_liver_brightness_data, train_data=train_data,
-                        types_of_average=current_types, relative_types_of_average=current_relative_types)
-                    result: float = Predictor.linear_regression(values_of_brightness=values_of_brightness,
-                                                                brightness_list=brightness_list,
-                                                                steatosis_status_list=steatosis_status_list)
-                else:
-                    raise Exception("Incorrect number of types of average")
+        if "regression" in method:
+            if method == "Second degree polynomial regression":
+                degree = 2
+            elif method == "Linear regression":
+                degree = 1
             else:
-                raise Exception("Incorrect number of brightness values")
-
-        elif method == "Second degree polynomial regression":
+                raise Exception(f"{method} method is not defined")
             if len(values_of_brightness) >= 1:
                 if len(types_of_average) >= 1:
                     whole_study_brightness_data: List[
@@ -97,7 +85,7 @@ class RequestHandler:
                     result: float = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
                                                                     brightness_list=brightness_list,
                                                                     steatosis_status_list=steatosis_status_list,
-                                                                    degree=2)
+                                                                    degree=degree)
                 else:
                     raise Exception("Incorrect number of types of average")
             else:

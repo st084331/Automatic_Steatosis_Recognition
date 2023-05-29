@@ -347,39 +347,6 @@ class Predictor:
         return [brightness_list, steatosis_status_list]
 
     @staticmethod
-    def linear_regression(values_of_brightness: List[float], brightness_list: List[List[float]],
-                          steatosis_status_list: List[float]) -> float:
-
-        # print("Start linear_regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-        brightness_list_len = len(brightness_list)
-        steatosis_status_list_len = len(steatosis_status_list)
-        values_of_brightness_len = len(values_of_brightness)
-        if brightness_list_len == 0 or steatosis_status_list_len == 0 or values_of_brightness_len == 0:
-            raise Exception("Impossible to predict")
-
-        if brightness_list_len != steatosis_status_list_len:
-            raise Exception("Unable to build mapping")
-
-        for elem in brightness_list:
-            if len(elem) == 0:
-                raise Exception("Empty element in brightness_list")
-            if len(elem) != values_of_brightness_len:
-                raise Exception("Different number of arguments for list elem and values_of_brightness")
-
-        # print("Start training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        reg = LinearRegression()
-        reg.fit(brightness_list, steatosis_status_list)
-
-        # print("End training linear regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        result_pred = reg.predict([values_of_brightness])
-
-        # print(f"End linear_regression with {result_pred[0]} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
-
-        return result_pred[0]
-
-    @staticmethod
     def polynomial_regression(values_of_brightness: List[float], brightness_list: List[List[float]],
                               steatosis_status_list: List[float], degree: int) -> float:
 
@@ -398,6 +365,9 @@ class Predictor:
                 raise Exception("Empty element in brightness_list")
             if len(elem) != values_of_brightness_len:
                 raise Exception("Different number of arguments for list elem and values_of_brightness")
+
+        if degree < 1:
+            raise Exception("Incorrect degree of regression")
         # print("Start training polynomial regression |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         poly_model = PolynomialFeatures(degree=degree)
