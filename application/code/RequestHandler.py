@@ -39,6 +39,7 @@ class RequestHandler:
         current_relative_types = FormatConverter.types_of_average_to_current_types(
             types_of_average=relative_types_of_average)
 
+        # Obtaining brightness data for a given study
         values_of_brightness: List[float] = RequestHandler.brightness_values_request(area=area,
                                                                                      types_of_average=types_of_average,
                                                                                      relative_types_of_average=relative_types_of_average,
