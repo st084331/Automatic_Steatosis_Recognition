@@ -1,0 +1,6 @@
+dicom2nifti==2.4.6
+livermask==1.3.3
+nibabel==3.2.1
+PyQt5==5.15.9
+scikit_learn==1.2.2
+torch==1.13.0
