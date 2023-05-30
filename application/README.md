@@ -2,8 +2,6 @@
 ____
 Installation Requirements
 
-'''
-
+```
   pip install requirements.txt
-
-'''
+```
