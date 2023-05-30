@@ -18,34 +18,42 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Steatosis Recognizer")
 
+        # Here will be the result
         self.result_label = QLabel()
 
+        # Here you can select the types of average value
         self.averages_label = QLabel("Select the types of average of liver (not 0)")
         self.averages_combobox = CheckableComboBox()
         self.averages_combobox.addItems(AVERAGES)
 
+        # Here you can select the relative types of average value
         self.relative_averages_label = QLabel("Select the types of average of whole study")
         self.relative_averages_combobox = CheckableComboBox()
         self.relative_averages_combobox.addItems(AVERAGES)
 
+        # Here you can select method
         self.method_label = QLabel("Select method")
         self.method_combobox = QComboBox()
         self.method_combobox.addItems(METHODS)
         self.method_combobox.currentIndexChanged.connect(self.handle_method_combobox)
 
+        # Here you can select the type of average value
         self.average_label = QLabel("Select type of average")
         self.average_combobox = QComboBox()
         self.average_combobox.addItems(AVERAGES)
 
+        # Here you can select the area
         self.area_label = QLabel("Select area")
         self.area_combobox = QComboBox()
         self.area_combobox.addItems(AREAS)
 
         self.help_label = QLabel("Enter the full path to the research folder")
 
+        # Here you can enter absolute path to folder
         self.input = QLineEdit()
 
         self.button = QPushButton("Analyse")
+        # This is button to star process
         self.button.clicked.connect(self.handle_analyse_button)
 
         layout = QVBoxLayout()
@@ -74,6 +82,7 @@ class MainWindow(QMainWindow):
         # print(f"Switching to method {method} |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
         layout = QVBoxLayout()
+        # If regression is chosen as the method, then the following widgets are needed
         if "regression" in method:
             self.area_label = QLabel("Select area")
             self.area_combobox = QComboBox()
@@ -99,6 +108,8 @@ class MainWindow(QMainWindow):
             layout.addWidget(self.relative_averages_combobox)
             layout.addWidget(self.button)
             layout.addWidget(self.result_label)
+
+        # If criterion is chosen as the method, then the following widgets are needed
         else:
             self.average_label = QLabel("Select type of average")
             self.average_combobox = QComboBox()
