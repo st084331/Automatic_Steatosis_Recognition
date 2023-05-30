@@ -68,6 +68,7 @@ class FileManager:
         if os.path.exists(most_powerful_criterion_train_path):
             with open(most_powerful_criterion_train_path, "r") as f:
                 content: str = f.read()
+                # Float check
                 if content.replace('.', '', 1).isdigit():
                     value: float = float(content)
                 else:
@@ -143,6 +144,7 @@ class FileManager:
         # print("End delete_residual_files |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
     @staticmethod
+    # Checking if there are only Dicom files in the folder
     def check_dcm_only_in_folder(folder_path: str, substr: str) -> int:
         # print("Start check_dcm_in_folder |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if os.path.exists(folder_path):
@@ -151,11 +153,16 @@ class FileManager:
                 for file in files_in_folder:
                     if substr not in file:
                         # print("End check_dcm_in_folder with True |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+                        # There is at least 1 non-Dicom file
                         return -1
 
                 # print("End check_dcm_in_folder with False |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+                # There are only Dicom files
                 return 1
             else:
+                # Folder is empty
                 return 0
         else:
             raise Exception("Folder does not exist")
@@ -164,6 +171,9 @@ class FileManager:
     def make_config(averages: List[str], data_folder_path: str = DATA_FOLDER_PATH,
                     config_folder_path: str = CONFIG_FOLDER_PATH):
         # print("Start make_config |", datetime.now().strftime("%H:%M:%S.%f")[:-3])
+
+        # Data upload
+
         whole_liver_brightness_data: List[Dict[str, Optional[Union[str, float]]]] = FileManager.load_brightness_data(
             data_folder_path=data_folder_path,
             file_name="whole_liver.csv")

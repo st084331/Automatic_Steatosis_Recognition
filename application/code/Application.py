@@ -15,10 +15,13 @@ class Application:
     def main(self):
         # print("Start Application main()", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
+        # Deleting files left after a critical program termination
         FileManager.delete_residual_files(substr=".nii")
 
+        # Parsing average values
         current_types: List[str] = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
 
+        # Creation of configuration files for fuzzy and most powerful criteria
         FileManager.make_config(averages=current_types)
 
         app = QApplication(sys.argv)
