@@ -2,13 +2,13 @@ import csv
 import json
 import os
 
-TYPES = ["median", "mode", "mean", "1", "3", "median_low", "median_high", "median_grouped"]
-
 CURRENT_FOLDER_PATH = os.getcwd()
 PARENT_FOLDER_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER_PATH, os.pardir))
 
 CONFIG_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, "test", "additional_files")
 DATA_FOLDER_PATH = os.path.join(PARENT_FOLDER_PATH, "test", "additional_files")
+
+DCM_CHECK_PATH = os.path.join(CONFIG_FOLDER_PATH, "dcm_check")
 
 TEST_STUDY_NAME_FOR_CT_HANDLER = "1.2.826.0.1.3680043.8.498.13402560764035164755255899587734776159"
 TEST_STUDY_PATH_FOR_CT_HANDLER = os.path.join(DATA_FOLDER_PATH, TEST_STUDY_NAME_FOR_CT_HANDLER)
