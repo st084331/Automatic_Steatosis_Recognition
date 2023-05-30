@@ -17,6 +17,10 @@ class Predictor:
         # print("Start finding intersection", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         brightness_of_sick_patients: List[float] = []
         brightness_of_healthy_patients: List[float] = []
+
+        """
+        Separate healthy and sick
+        """
         for bd in whole_liver_brightness_data:
             for t in train_data:
                 if 'nii' in bd.keys():
@@ -42,6 +46,9 @@ class Predictor:
                 else:
                     raise Exception(f"Wrong keys in {bd}")
 
+        """
+        Looking for the intersection of the list of sick and healthy
+        """
         if len(brightness_of_sick_patients) > 0:
             intersection_max_point: float = max(brightness_of_sick_patients)
         else:
@@ -131,6 +138,9 @@ class Predictor:
                     else:
                         raise Exception(f"Wrong keys in {bd}")
 
+            """
+            We are looking for a point with the best score to the left of the center
+            """
             score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_init))
             leftmost_best_score = score
             leftmost_point = border_point
@@ -171,6 +181,9 @@ class Predictor:
                     sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_leftmost))
                 # print(f"current_leftmost_score={current_leftmost_score}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
+            """
+            We are looking for a point with the best score to the right of the center
+            """
             border_point = (max_point + min_point) / 2
             score = math.fabs(sklearn.metrics.f1_score(steatosis_status_list, pred_steatosis_status_list_init))
             rightmost_best_score = score
@@ -266,6 +279,11 @@ class Predictor:
         elif value_of_brightness < intersection_min_point:
             prediction = 1.0
         else:
+            """
+            Divide the number of patients whose value
+            is greater than or equal to the given one
+            by the number of intersection elements
+            """
             sick_counter = 0
             for sick in sick_intersection:
                 if sick >= value_of_brightness:
