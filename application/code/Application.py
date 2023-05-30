@@ -17,11 +17,8 @@ class Application:
         # Deleting files left after a critical program termination
         FileManager.delete_residual_files(substr=".nii")
 
-        # Parsing average values
-        current_types: List[str] = FormatConverter.types_of_average_to_current_types(types_of_average=AVERAGES)
-
         # Creation of configuration files for fuzzy and most powerful criteria
-        FileManager.make_config(averages=current_types)
+        FileManager.make_config(averages=AVERAGES)
 
         self.app = QApplication(sys.argv)
 
