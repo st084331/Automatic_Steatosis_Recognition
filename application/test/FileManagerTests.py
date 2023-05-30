@@ -4,7 +4,7 @@ import unittest
 from json import JSONDecodeError
 
 from application.code.FileManager import FileManager
-from application.test.TestHelper import TestHelper, DATA_FOLDER_PATH, CONFIG_FOLDER_PATH
+from application.test.TestHelper import TestHelper, DATA_FOLDER_PATH, CONFIG_FOLDER_PATH, DCM_CHECK_PATH
 
 
 class FileManagerTest(unittest.TestCase):
@@ -220,25 +220,33 @@ class FileManagerTest(unittest.TestCase):
             FileManager.delete_residual_files(substr="test_delete_residual", folder_path="bad_folder")
 
     def test_check_dcm_only_in_folder_true(self):
-        paths = TestHelper.make_txt_file(path=CONFIG_FOLDER_PATH, file="test_check_dcm_in_folder", data="Check it!")
+        if not os.path.exists(DCM_CHECK_PATH):
+            os.mkdir(DCM_CHECK_PATH)
+        paths = TestHelper.make_txt_file(path=DCM_CHECK_PATH, file="test_check_dcm_in_folder", data="Check it!")
 
-        self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path=CONFIG_FOLDER_PATH, substr="test"), 1)
+        self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path=DCM_CHECK_PATH, substr="test"), 1)
 
         for path in paths:
             os.remove(path)
 
     def test_check_dcm_only_in_folder_false(self):
-        paths = TestHelper.make_txt_file(path=CONFIG_FOLDER_PATH, file="dest_check_dcm_in_folder", data="Check it!")
+        if not os.path.exists(DCM_CHECK_PATH):
+            os.mkdir(DCM_CHECK_PATH)
+        paths = TestHelper.make_txt_file(path=DCM_CHECK_PATH, file="dest_check_dcm_in_folder", data="Check it!")
 
-        self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path=CONFIG_FOLDER_PATH, substr="test"), -1)
+        self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path=DCM_CHECK_PATH, substr="test"), -1)
 
         for path in paths:
             os.remove(path)
 
     def test_check_dcm_only_in_folder_empty(self):
-        self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path=CONFIG_FOLDER_PATH, substr="test"), 0)
+        if not os.path.exists(DCM_CHECK_PATH):
+            os.mkdir(DCM_CHECK_PATH)
+        self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path=DCM_CHECK_PATH, substr="test"), 0)
 
     def test_check_dcm_only_in_folder_wrong_folder_path(self):
+        if not os.path.exists(DCM_CHECK_PATH):
+            os.mkdir(DCM_CHECK_PATH)
         with self.assertRaises(Exception):
             self.assertEqual(FileManager.check_dcm_only_in_folder(folder_path="bad_folder", substr="test"), 0)
 

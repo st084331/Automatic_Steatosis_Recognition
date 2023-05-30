@@ -4,7 +4,6 @@ from datetime import datetime
 
 from application.code.CT_Handler import CT_Handler
 from application.code.FileManager import FileManager
-from application.code.FormatConverter import FormatConverter
 from application.code.Init import CONFIG_FOLDER_PATH, PARENT_FOLDER_PATH
 from application.code.Predictor import Predictor
 from typing import List, Dict, Optional, Union
@@ -34,11 +33,6 @@ class RequestHandler:
         name_of_nifti_wo_extension: str = folder_struct[len(folder_struct) - 1]
         # print(f"name_of_nifti_wo_extension = {name_of_nifti_wo_extension}", datetime.now().strftime("%H:%M:%S.%f")[:-3])
 
-        current_types = FormatConverter.types_of_average_to_current_types(types_of_average=types_of_average)
-
-        current_relative_types = FormatConverter.types_of_average_to_current_types(
-            types_of_average=relative_types_of_average)
-
         # Obtaining brightness data for a given study
         values_of_brightness: List[float] = RequestHandler.brightness_values_request(area=area,
                                                                                      types_of_average=types_of_average,
@@ -54,7 +48,7 @@ class RequestHandler:
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
                     sick_intersection, healthy_intersection = FileManager.load_data_for_fuzzy_criterion(
-                        type_of_average=current_types[0])
+                        type_of_average=types_of_average[0])
                     result: float = Predictor.fuzzy_criterion(value_of_brightness=values_of_brightness[0],
                                                               healthy_intersection=healthy_intersection,
                                                               sick_intersection=sick_intersection)
@@ -67,7 +61,7 @@ class RequestHandler:
             if len(values_of_brightness) == 1:
                 if len(types_of_average) == 1:
                     boarder_point: float = FileManager.load_data_for_most_powerful_criterion(
-                        type_of_average=current_types[0], config_folder_path=config_folder_path)
+                        type_of_average=types_of_average[0], config_folder_path=config_folder_path)
                     result: float = Predictor.most_powerful_criterion(value_of_brightness=values_of_brightness[0],
                                                                       boarder_point=boarder_point)
                 else:
@@ -95,7 +89,7 @@ class RequestHandler:
                     brightness_list, steatosis_status_list = Predictor.regression_data_maker(
                         whole_study_brightness_data=whole_study_brightness_data,
                         whole_liver_brightness_data=whole_liver_brightness_data, train_data=train_data,
-                        types_of_average=current_types, relative_types_of_average=current_relative_types)
+                        types_of_average=types_of_average, relative_types_of_average=relative_types_of_average)
                     result: float = Predictor.polynomial_regression(values_of_brightness=values_of_brightness,
                                                                     brightness_list=brightness_list,
                                                                     steatosis_status_list=steatosis_status_list,
